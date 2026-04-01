@@ -1,8 +1,7 @@
-from flask_sqlalchemy import SQLAlchemy
+# Инициализируем объект базы данных
+from app.db.session import db
 from datetime import datetime
 
-# Инициализируем объект базы данных
-db = SQLAlchemy()
 
 
 class User(db.Model):
