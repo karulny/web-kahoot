@@ -9,7 +9,3 @@ def handle_create_quiz():
     # Вызываем сервис
     quiz = create_quiz_logic(data['title'], author_id=1) # работает но фигня
     return jsonify({"status": "success", "pin": quiz.pin_code})
-
-@quiz_bp.route('/join')
-def join_page():
-    return render_template('index.html')

@@ -1,6 +1,7 @@
 from flask import Flask
 from app.db.session import db
 from app.handlers.quiz_handler import quiz_bp
+from app.handlers.auth_handler import auth_bp
 
 app = Flask(__name__,
             template_folder='app/templates',
@@ -14,7 +15,8 @@ app.config['SECRET_KEY'] = 'super-secret-key'
 db.init_app(app)
 
 # Регистрация хэндлеров (Blueprint)
-app.register_blueprint(quiz_bp, url_prefix='/quiz')
+app.register_blueprint(auth_bp, url_prefix='/auth')
+# app.register_blueprint(quiz_bp, url_prefix='/quiz')
 
 with app.app_context():
     db.create_all()

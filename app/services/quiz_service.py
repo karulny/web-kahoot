@@ -8,6 +8,6 @@ def generate_unique_pin():
 def create_quiz_logic(title, author_id):
     new_pin = generate_unique_pin()
     new_quiz = Quiz(title=title, pin_code=new_pin, author_id=author_id)
-    db.session.add(new_quiz)
+    db.session.add(new_quiz)    
     db.session.commit()
     return new_quiz
