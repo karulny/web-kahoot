@@ -1,8 +1,12 @@
 from flask import Flask
 from backend.app.db.session import db
 from backend.app.handlers.auth_handler import auth_bp
+from flask_cors import CORS
 
 app = Flask(__name__)
+# На будущее
+CORS(app, supports_credentials=True)
+
 # Настройки
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:1111@localhost:5432/quiz_db'
 app.config['SECRET_KEY'] = 'super-secret-key'
