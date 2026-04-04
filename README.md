@@ -1,7 +1,8 @@
 # web-kahoot (Проект для ЯЛа)
 ![Static Badge](https://img.shields.io/badge/python_3.14-project-green?logo=python)
 ![Static Badge](https://img.shields.io/badge/flask-project-aqua?logo=flask)
-![Static Badge](https://img.shields.io/badge/github-repo-blue?logo=github)
+![Static Badge](https://img.shields.io/badge/github-repo-grey?logo=github)
+
 
 ### для удобства, потом уберу:
 - │ 
