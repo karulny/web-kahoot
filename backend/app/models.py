@@ -1,5 +1,5 @@
 # Инициализируем объект базы данных
-from app.db.session import db
+from backend.app.db.session import db
 from datetime import datetime
 
 

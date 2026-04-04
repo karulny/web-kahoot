@@ -1,5 +1,5 @@
-from flask import Blueprint, request, jsonify, render_template
-from app.services.quiz_service import create_quiz_logic
+from flask import Blueprint, request, jsonify
+from backend.app.services.quiz_service import create_quiz_logic
 
 quiz_bp = Blueprint('quiz', __name__)
 

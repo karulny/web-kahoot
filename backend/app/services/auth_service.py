@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
-from app.db.session import db
-from app.models import User
+from backend.app.db.session import db
+from backend.app.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
@@ -11,11 +11,9 @@ def validate_password_strength(password):
     if len(password) < 8:
         return "Пароль должен быть не короче 8 символов."
 
-    # Проверка на наличие цифры (метод .isdigit())
     if not any(char.isdigit() for char in password):
         return "Пароль должен содержать хотя бы одну цифру."
 
-    # Проверка на заглавную букву (метод .isupper())
     if not any(char.isupper() for char in password):
         return "Пароль должен содержать хотя бы одну заглавную букву."
 
@@ -28,11 +26,11 @@ def register_user(username, password):
     if password_error:
         return {"success": False, "message": password_error}
 
-    # 2. Проверяем длину логина (например)
+    # 2. Проверяем длину логина
     if len(username) < 3:
         return {"success": False, "message": "Логин слишком короткий."}
 
-    # 3. Дальше идет проверка на уникальность в БД и сохранение...
+    # 3. Дальше идет проверка на уникальность в БД
     if User.query.filter_by(username=username).first():
         return {"success": False, "message": "Такой логин уже существует"}
 

@@ -1,12 +1,8 @@
 from flask import Flask
-from app.db.session import db
-from app.handlers.quiz_handler import quiz_bp
-from app.handlers.auth_handler import auth_bp
+from backend.app.db.session import db
+from backend.app.handlers.auth_handler import auth_bp
 
-app = Flask(__name__,
-            template_folder='app/templates',
-            static_folder='app/static')
-
+app = Flask(__name__)
 # Настройки
 app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:1111@localhost:5432/quiz_db'
 app.config['SECRET_KEY'] = 'super-secret-key'

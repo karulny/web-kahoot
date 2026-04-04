@@ -1,6 +1,6 @@
 import random
-from app.db.session import db
-from app.models import Quiz
+from backend.app.db.session import db
+from backend.app.models import Quiz
 
 def generate_unique_pin():
     return str(random.randint(1000, 9999))
