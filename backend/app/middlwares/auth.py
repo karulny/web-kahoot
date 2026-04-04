@@ -1,10 +1,10 @@
-from flask import session, redirect, url_for
 from functools import wraps
+from flask import session, jsonify
 
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'user_id' not in session:
-            return redirect(url_for('auth.login'))
+            return jsonify({"success": False, "message": "Сначала войдите в систему"}), 401
         return f(*args, **kwargs)
     return decorated_function
