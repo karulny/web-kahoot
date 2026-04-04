@@ -42,10 +42,6 @@ def register_page():
     if not data:
         return jsonify({"success": False, "message": "No data provided"}), 400
 
-    username = data.get('username')
-    password = data.get('password')
-
-
     if result.get("success"):
         session['user_id'] = result['user_id']  # Сессия все еще работает!
         return jsonify({
