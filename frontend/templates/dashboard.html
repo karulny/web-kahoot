@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Мои квизы — КВИЗУМ{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+  <div class="container">
+    <div class="dash-header">
+      <div>
+        <h1>Мои квизы</h1>
+        <p class="dash-sub" id="quiz-count">Загрузка...</p>
+      </div>
+      <button class="btn btn-primary" onclick="showCreateModal()">+ Новый квиз</button>
+    </div>
+
+    <div id="quiz-list" class="quiz-grid">
+      <div class="loading-state">Загружаем квизы...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка создания квиза -->
+<div id="create-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="hideCreateModal()"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Новый квиз</h2>
+      <button class="modal-close" onclick="hideCreateModal()">✕</button>
+    </div>
+
+    <div class="field">
+      <label>Название квиза</label>
+      <input type="text" id="quiz-title" placeholder="Например: История России">
+    </div>
+
+    <div id="questions-list"></div>
+
+    <button class="btn btn-ghost btn-full" onclick="addQuestion()">+ Добавить вопрос</button>
+
+    <div id="create-error" class="form-error"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="hideCreateModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveQuiz()">Сохранить квиз</button>
+    </div>
+  </div>
+</div>
+
+<!-- Модалка управления игрой -->
+<div id="game-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="hideGameModal()"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2 id="game-modal-title">Управление игрой</h2>
+      <button class="modal-close" onclick="hideGameModal()">✕</button>
+    </div>
+    <div id="game-modal-body"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+{% endblock %}
