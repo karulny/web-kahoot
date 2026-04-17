@@ -5,50 +5,39 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 
 def validate_password_strength(password):
-    """
-    Возвращает текст ошибки или None, если всё ок.
-    """
-    if len(password) < 8:
-        return "Пароль должен быть не короче 8 символов."
-
-    if not any(char.isdigit() for char in password):
-        return "Пароль должен содержать хотя бы одну цифру."
-
-    if not any(char.isupper() for char in password):
-        return "Пароль должен содержать хотя бы одну заглавную букву."
-
+    rules = [
+        (len(password) >= 8, "Пароль должен быть не короче 8 символов."),
+        (any(c.isdigit() for c in password), "Нужна хотя бы одна цифра."),
+        (any(c.isupper() for c in password), "Нужна хотя бы одна заглавная буква.")
+    ]
+    for condition, msg in rules:
+        if not condition: return msg
     return None
 
 
 def register_user(username, password):
-    # 1. Проверяем сложность пароля
-    password_error = validate_password_strength(password)
-    if password_error:
-        return {"success": False, "message": password_error}
+    if (err := validate_password_strength(password)):
+        return {"success": False, "message": err}
 
-    # 2. Проверяем длину логина
     if len(username) < 3:
         return {"success": False, "message": "Логин слишком короткий."}
 
-    # 3. Дальше идет проверка на уникальность в БД
     if User.query.filter_by(username=username).first():
-        return {"success": False, "message": "Такой логин уже существует"}
+        return {"success": False, "message": "Логин занят"}
 
-    password_hash = generate_password_hash(password)
-    new_user = User(username=username, password_hash=password_hash)
+    user = User(username=username, password_hash=generate_password_hash(password))
     try:
-        db.session.add(new_user)
+        db.session.add(user)
         db.session.commit()
+        return {"success": True, "user_id": user.id}
     except IntegrityError:
         db.session.rollback()
-        return {"success": False, "message": "Ошибка базы данных"}
-    return {"success": True, "message": "Успешно!", "user_id": new_user.id}
+        return {"success": False, "message": "Ошибка БД"}
+
 
 def login_user(username, password):
     user = User.query.filter_by(username=username).first()
-
     if user and check_password_hash(user.password_hash, password):
         return {"success": True, "user_id": user.id}
-
-    return {"success": False, "message": "Неверный логин или пароль"}
+    return {"success": False, "message": "Неверные данные"}
 
