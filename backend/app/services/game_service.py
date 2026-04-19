@@ -61,10 +61,10 @@ def next_question(session_id, author_id):
     if session.status == 'waiting':
         session.status = 'active'
         session.current_question_index = 0
-        session.started_at = datetime.utcnow()
+        session.started_at = datetime.datetime.now(datetime.UTC)
     elif session.current_question_index + 1 >= total:
         session.status = 'finished'
-        session.finished_at = datetime.utcnow()
+        session.finished_at = datetime.datetime.now(datetime.UTC)
         db.session.commit()
         return {"success": True, "finished": True}
     else:
