@@ -11,7 +11,7 @@ class GameSession(db.Model):
     started_at = db.Column(db.DateTime, nullable=True)
     finished_at = db.Column(db.DateTime, nullable=True)
 
-    quiz = db.relationship('Quiz', backref='sessions')
+    quiz = db.relationship('Quiz')
     participants = db.relationship('SessionParticipant', backref='session', cascade='all, delete-orphan')
 
 

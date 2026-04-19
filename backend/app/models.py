@@ -20,8 +20,9 @@ class Quiz(db.Model):
     pin_code = db.Column(db.String(10), unique=True, nullable=False)  # Код для входа игроков
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    sessions = db.relationship('GameSession', backref='quiz_ref', cascade='all, delete-orphan', lazy=True)
-
+    sessions = db.relationship(
+        'GameSession', cascade='all, delete-orphan', lazy=True
+    )
     # Связи
     questions = db.relationship('Question', backref='quiz', cascade="all, delete-orphan", lazy=True)
     participants = db.relationship('Participant', backref='quiz', cascade="all, delete-orphan", lazy=True)
