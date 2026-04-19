@@ -11,7 +11,8 @@ def validate_password_strength(password):
         (any(c.isupper() for c in password), "Нужна хотя бы одна заглавная буква.")
     ]
     for condition, msg in rules:
-        if not condition: return msg
+        if not condition:
+            return msg
     return None
 
 
@@ -40,4 +41,3 @@ def login_user(username, password):
     if user and check_password_hash(user.password_hash, password):
         return {"success": True, "user_id": user.id}
     return {"success": False, "message": "Неверные данные"}
-
