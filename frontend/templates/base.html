@@ -1,61 +1,21 @@
-{% extends "base.html" %}
-{% block title %}КВИЗСТРОЙ{% endblock %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}КВИЗСТРОЙ{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    {% block navbar %}
+    {% endblock %}
 
-{% block content %}
-<section class="hero">
-  <div class="hero-content">
-    <span class="hero-label">Квизы в реальном времени</span>
-    <h1 class="hero-title">Платформа для<br>интерактивных опросов</h1>
-    <p class="hero-sub">Создавай квизы, проводи игры, получай аналитику.</p>
-    <div class="hero-actions">
-      <a href="/auth" class="btn btn-primary btn-lg">Создать квиз</a>
-      <div class="pin-join">
-        <input type="text" id="pinInput" placeholder="PIN-код" maxlength="8" class="pin-input">
-        <button class="btn btn-outline btn-lg" onclick="goJoin()">Войти →</button>
-      </div>
-    </div>
-  </div>
-</section>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
 
-<section class="features">
-  <div class="container">
-    <div class="features-header">
-      <h2>Возможности</h2>
-    </div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>Real-time</h3>
-        <p>Вопросы появляются у участников одновременно</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Статистика</h3>
-        <p>Распределение ответов после каждого вопроса</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">📥</div>
-        <h3>Экспорт</h3>
-        <p>Результаты в Excel одной кнопкой</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔗</div>
-        <h3>Без регистрации</h3>
-        <p>Участники входят по PIN или ссылке</p>
-      </div>
-    </div>
-  </div>
-</section>
-{% endblock %}
-
-{% block scripts %}
-<script>
-  function goJoin() {
-    const pin = document.getElementById('pinInput').value.trim().toUpperCase();
-    if (pin) location.href = `/play/${pin}`;
-  }
-  document.getElementById('pinInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') goJoin();
-  });
-</script>
-{% endblock %}
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>
