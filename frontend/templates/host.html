@@ -1,62 +1,64 @@
 {% extends "base.html" %}
-{% block title %}Ведущий — КВИЗСТРОЙ{% endblock %}
+{% block title %}Игра — КВИЗСТРОЙ{% endblock %}
 {% block navbar %}{% endblock %}
 
 {% block content %}
-<div class="host-page">
-  <div class="host-header">
-    <a href="/dashboard" class="btn btn-ghost btn-sm">← Назад</a>
-    <div class="host-pin">
-      PIN: <span id="pin-display">{{ pin }}</span>
-      <button class="btn-copy" onclick="copyPin()" title="Скопировать">⧉</button>
+<div class="play-page">
+
+  <!-- Вход -->
+  <div id="screen-join" class="play-screen">
+    <div class="join-box">
+      <a href="/" class="auth-logo" style="text-align:center">КВИЗ<span>СТРОЙ</span></a>
+      <h2>Присоединиться</h2>
+      <div class="pin-display-big">{{ pin }}</div>
+      <div class="field">
+        <label>Имя</label>
+        <input type="text" id="player-name" placeholder="Введи имя" maxlength="30" autofocus>
+      </div>
+      <div id="join-error" class="form-error"></div>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doJoin()">Войти в игру</button>
     </div>
-    <div id="participants-badge" class="participants-badge">0 участников</div>
   </div>
 
-  <div class="host-body">
-    <!-- Экран ожидания -->
-    <div id="screen-waiting" class="host-screen">
-      <div class="waiting-content">
-        <div class="qr-placeholder" id="qr-container"></div>
-        <h2>Ожидание участников</h2>
-        <p>Поделись PIN-кодом: <strong>{{ pin }}</strong></p>
-        <p>или ссылкой: <span class="link-preview">{{ request.host_url }}play/{{ pin }}</span></p>
-        <div id="joined-list" class="joined-list"></div>
-        <button class="btn btn-primary btn-lg" onclick="hostAction()" id="start-btn">
-          Начать игру →
-        </button>
-      </div>
+  <!-- Ожидание -->
+  <div id="screen-waiting" class="play-screen hidden">
+    <div class="waiting-play">
+      <div class="pulse-ring"></div>
+      <h2>Ты в игре</h2>
+      <p class="player-name-badge" id="my-name-badge"></p>
+      <p class="waiting-text">Ожидаем начала...</p>
+      <div class="waiting-dots"><span></span><span></span><span></span></div>
     </div>
+  </div>
 
-    <!-- Экран вопроса -->
-    <div id="screen-question" class="host-screen hidden">
-      <div class="question-progress">
-        <span id="q-num">Вопрос 1</span>
-        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
-        <span id="q-total">из ?</span>
+  <!-- Вопрос -->
+  <div id="screen-question" class="play-screen hidden">
+    <div class="play-header">
+      <div class="play-progress">
+        <span id="play-q-num">1 / ?</span>
+        <div class="progress-bar"><div class="progress-fill" id="play-progress"></div></div>
       </div>
-      <div class="host-question-card">
-        <h2 id="question-text"></h2>
-        <div id="question-media"></div>
-        <div id="answers-display" class="host-answers"></div>
-      </div>
-      <div id="answer-stats" class="answer-stats hidden"></div>
-      <div class="host-controls">
-        <button class="btn btn-ghost" onclick="showStats()" id="stats-btn">📊 Статистика</button>
-        <button class="btn btn-primary btn-lg" onclick="hostAction()" id="next-btn">
-          Следующий вопрос →
-        </button>
-      </div>
+      <div class="play-score"><span id="my-score">0</span></div>
     </div>
+    <div class="play-question">
+      <div id="play-media"></div>
+      <h2 id="play-question-text"></h2>
+    </div>
+    <div id="play-answers" class="play-answers"></div>
+    <div id="answer-feedback" class="answer-feedback hidden"></div>
+  </div>
 
-    <!-- Финальный экран -->
-    <div id="screen-finished" class="host-screen hidden">
-      <h2 class="finished-title">🏆 Игра завершена!</h2>
-      <div id="final-leaderboard" class="leaderboard"></div>
-      <div class="host-controls">
-        <a href="/game/export/{{ session_id }}" class="btn btn-accent">📥 Скачать Excel</a>
-        <a href="/dashboard" class="btn btn-primary">В дашборд</a>
+  <!-- Финал -->
+  <div id="screen-finished" class="play-screen hidden">
+    <div class="finish-box">
+      <div class="finish-emoji" id="finish-emoji">🎉</div>
+      <h2 id="finish-title">Игра завершена</h2>
+      <div class="my-final-score">
+        <span id="final-score-val">0</span>
+        <span class="score-label">очков</span>
       </div>
+      <div id="final-leaderboard" class="leaderboard-compact"></div>
+      <a href="/" class="btn btn-outline">На главную</a>
     </div>
   </div>
 </div>
@@ -64,16 +66,34 @@
 
 {% block scripts %}
 <script>
-  const SESSION_ID = {{ session_id }};
   const PIN = '{{ pin }}';
+  let participantId = null;
   let currentQuestionId = null;
-  let statsShown = false;
+  let myScore = 0;
+  let answered = false;
   let pollingInterval = null;
-  let lastStatus = null;
+
+  async function doJoin() {
+    const name = document.getElementById('player-name').value.trim();
+    const err = document.getElementById('join-error');
+    if (!name) { err.textContent = 'Введи имя'; return; }
+    err.textContent = '';
+
+    const res = await fetch('/game/join', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({pin: PIN, name})
+    });
+    const data = await res.json();
+    if (!data.success) { err.textContent = data.message; return; }
+
+    participantId = data.participant_id;
+    document.getElementById('my-name-badge').textContent = name;
+    showScreen('waiting');
+    startPolling();
+  }
 
   function startPolling() {
-    pollingInterval = setInterval(pollStatus, 2500);
-    pollStatus();
+    pollingInterval = setInterval(pollStatus, 2000);
   }
 
   async function pollStatus() {
@@ -82,109 +102,97 @@
       const data = await res.json();
       if (!data.success) return;
 
-      document.getElementById('participants-badge').textContent = `${data.participants_count} участников`;
-
       if (data.status === 'waiting') {
-        updateJoinedList(data);
+        showScreen('waiting');
       } else if (data.status === 'active') {
         showScreen('question');
         renderQuestion(data);
       } else if (data.status === 'finished') {
         clearInterval(pollingInterval);
         showScreen('finished');
-        renderLeaderboard(data.leaderboard);
+        renderFinish(data);
       }
-      lastStatus = data;
     } catch(e) {}
-  }
-
-  function updateJoinedList(data) {
-    // участники в ожидании — не приходят списком, только count
   }
 
   function renderQuestion(data) {
     const q = data.question;
-    if (currentQuestionId === q.id && statsShown) return;
-    if (currentQuestionId !== q.id) {
-      statsShown = false;
-      document.getElementById('answer-stats').classList.add('hidden');
-      document.getElementById('stats-btn').style.display = '';
-    }
+    if (currentQuestionId === q.id) return;
     currentQuestionId = q.id;
+    answered = data.already_answered || false;
 
     const idx = data.current_index + 1;
     const total = data.total_questions;
-    document.getElementById('q-num').textContent = `Вопрос ${idx}`;
-    document.getElementById('q-total').textContent = `из ${total}`;
-    document.getElementById('progress-fill').style.width = `${(idx / total) * 100}%`;
-    document.getElementById('question-text').textContent = q.text;
+    document.getElementById('play-q-num').textContent = `${idx} / ${total}`;
+    document.getElementById('play-progress').style.width = `${(idx / total) * 100}%`;
+    document.getElementById('play-question-text').textContent = q.text;
 
-    const media = document.getElementById('question-media');
+    const media = document.getElementById('play-media');
     media.innerHTML = q.media_url ? `<img src="${q.media_url}" class="q-media">` : '';
 
-    const answersEl = document.getElementById('answers-display');
-    const colors = ['ans-a', 'ans-b', 'ans-c', 'ans-d'];
-    answersEl.innerHTML = q.answers.map((a, i) =>
-      `<div class="host-answer ${colors[i % 4]}">${a.text}</div>`
-    ).join('');
+    document.getElementById('answer-feedback').classList.add('hidden');
 
-    const isLast = data.current_index + 1 >= data.total_questions;
-    document.getElementById('next-btn').textContent = isLast ? 'Завершить игру ✓' : 'Следующий вопрос →';
-  }
-
-  async function showStats() {
-    if (!currentQuestionId) return;
-    const res = await fetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
-    const data = await res.json();
-    const el = document.getElementById('answer-stats');
-    const dist = data.distribution || {};
-    const total = data.total || 0;
-    el.innerHTML = `<div class="stats-title">Ответили: ${total}</div>` +
-      Object.entries(dist).map(([text, count]) => {
-        const pct = total ? Math.round(count / total * 100) : 0;
-        return `<div class="stat-row"><span>${text}</span><div class="stat-bar"><div style="width:${pct}%"></div></div><span>${count}</span></div>`;
-      }).join('');
-    el.classList.remove('hidden');
-    statsShown = true;
-    document.getElementById('stats-btn').style.display = 'none';
-  }
-
-  async function hostAction() {
-    const res = await fetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
-    const data = await res.json();
-    if (!data.success) return;
-    if (data.finished) {
-      clearInterval(pollingInterval);
-      showScreen('finished');
-      const lb = await fetch(`/game/leaderboard/${SESSION_ID}`);
-      const lbData = await lb.json();
-      renderLeaderboard(lbData.leaderboard);
+    const answersEl = document.getElementById('play-answers');
+    if (answered) {
+      answersEl.innerHTML = `<div class="already-answered">Ответ принят</div>`;
     } else {
-      statsShown = false;
-      pollStatus();
+      answersEl.innerHTML = q.answers.map((a, i) =>
+        `<button class="play-answer-btn" onclick="submitAnswer(${q.id}, ${a.id}, this)">
+          ${a.text}
+        </button>`
+      ).join('');
     }
   }
 
-  function renderLeaderboard(lb) {
+  async function submitAnswer(questionId, optionId, btn) {
+    if (answered) return;
+    answered = true;
+    document.querySelectorAll('.play-answer-btn').forEach(b => b.disabled = true);
+    btn.classList.add('selected');
+
+    const res = await fetch('/game/answer', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({question_id: questionId, answer_option_id: optionId})
+    });
+    const data = await res.json();
+    if (!data.success) return;
+
+    myScore = data.score;
+    document.getElementById('my-score').textContent = myScore;
+
+    const fb = document.getElementById('answer-feedback');
+    fb.className = `answer-feedback ${data.is_correct ? 'correct' : 'wrong'}`;
+    fb.textContent = data.is_correct ? '✓ Правильно +100' : '✗ Неверно';
+    fb.classList.remove('hidden');
+    btn.classList.add(data.is_correct ? 'correct' : 'wrong');
+  }
+
+  function renderFinish(data) {
+    document.getElementById('final-score-val').textContent = myScore;
+    const lb = data.leaderboard || [];
     const medals = ['🥇', '🥈', '🥉'];
-    document.getElementById('final-leaderboard').innerHTML = lb.map((p, i) =>
-      `<div class="lb-row ${i < 3 ? 'lb-top' : ''}">
-        <span class="lb-place">${medals[i] || i + 1}</span>
-        <span class="lb-name">${p.name}</span>
-        <span class="lb-score">${p.score} очков</span>
+    if (lb[0] && lb[0].score === myScore) {
+      document.getElementById('finish-emoji').textContent = '🏆';
+      document.getElementById('finish-title').textContent = 'Победа!';
+    }
+    document.getElementById('final-leaderboard').innerHTML = lb.slice(0, 5).map((p, i) =>
+      `<div class="lb-compact-row ${p.score === myScore ? 'lb-me' : ''}">
+        <span>${medals[i] || i + 1}</span>
+        <span>${p.name}</span>
+        <span>${p.score}</span>
       </div>`
     ).join('');
   }
 
   function showScreen(name) {
-    document.querySelectorAll('.host-screen').forEach(s => s.classList.add('hidden'));
+    document.querySelectorAll('.play-screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(`screen-${name}`).classList.remove('hidden');
   }
 
-  function copyPin() {
-    navigator.clipboard.writeText(PIN);
-  }
-
-  startPolling();
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !document.getElementById('screen-join').classList.contains('hidden')) {
+      doJoin();
+    }
+  });
 </script>
 {% endblock %}
