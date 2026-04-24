@@ -1,37 +1,21 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% block title %}КВИЗСТРОЙ{% endblock %}</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;800&family=Golos+Text:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
-  {% block head %}{% endblock %}
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}КВИЗСТРОЙ{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
 </head>
 <body>
-  {% block navbar %}
-  <nav class="nav">
-    <a href="/" class="nav-logo">КВИЗ<span>СТРОЙ</span></a>
-    <div class="nav-right">
-      {% if session.get('user_id') %}
-        <a href="/dashboard" class="nav-link">Мои квизы</a>
-        <button class="btn btn-ghost" onclick="logout()">Выйти</button>
-      {% else %}
-        <a href="/auth" class="btn btn-outline">Войти</a>
-      {% endif %}
-    </div>
-  </nav>
-  {% endblock %}
+    {% block navbar %}
+    {% endblock %}
 
-  <main>{% block content %}{% endblock %}</main>
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
 
-  <script>
-    async function logout() {
-      await fetch('/auth/logout', {method: 'POST'});
-      location.href = '/';
-    }
-  </script>
-  {% block scripts %}{% endblock %}
+    {% block scripts %}
+    {% endblock %}
 </body>
 </html>

@@ -1,63 +1,178 @@
 {% extends "base.html" %}
-{% block title %}Мои квизы — КВИЗСТРОЙ{% endblock %}
+{% block title %}Ведущий — КВИЗСТРОЙ{% endblock %}
+{% block navbar %}{% endblock %}
 
 {% block content %}
-<div class="dashboard">
-  <div class="container">
-    <div class="dash-header">
-      <div>
-        <h1>Мои квизы</h1>
-        <p class="dash-sub" id="quiz-count">Загрузка...</p>
+<div class="host-page">
+  <div class="host-header">
+    <a href="/dashboard" class="btn btn-ghost btn-sm">← Назад</a>
+    <div class="host-pin">
+      {{ pin }}
+      <button class="btn-copy" onclick="copyPin()" title="Скопировать">⧉</button>
+    </div>
+    <div id="participants-badge" class="participants-badge">0 участников</div>
+  </div>
+
+  <div class="host-body">
+    <!-- Ожидание -->
+    <div id="screen-waiting" class="host-screen">
+      <div class="waiting-content">
+        <h2>Ожидание участников</h2>
+        <p>PIN: <strong style="font-family:var(--mono);color:var(--accent)">{{ pin }}</strong></p>
+        <p class="link-preview">{{ request.host_url }}play/{{ pin }}</p>
+        <div id="joined-list" class="joined-list"></div>
+        <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
       </div>
-      <button class="btn btn-primary" onclick="showCreateModal()">+ Новый квиз</button>
     </div>
 
-    <div id="quiz-list" class="quiz-grid">
-      <div class="loading-state">Загружаем квизы...</div>
+    <!-- Вопрос -->
+    <div id="screen-question" class="host-screen hidden">
+      <div class="question-progress">
+        <span id="q-num">01</span>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        <span id="q-total">/ ?</span>
+      </div>
+      <div class="host-question-card">
+        <div id="question-media"></div>
+        <h2 id="question-text"></h2>
+        <div id="answers-display" class="host-answers"></div>
+      </div>
+      <div id="answer-stats" class="answer-stats hidden"></div>
+      <div class="host-controls">
+        <button class="btn btn-ghost btn-sm" onclick="showStats()" id="stats-btn">Статистика</button>
+        <button class="btn btn-primary" onclick="hostAction()" id="next-btn">Следующий →</button>
+      </div>
     </div>
-  </div>
-</div>
 
-<!-- Модалка создания квиза -->
-<div id="create-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="hideCreateModal()"></div>
-  <div class="modal-box">
-    <div class="modal-header">
-      <h2>Новый квиз</h2>
-      <button class="modal-close" onclick="hideCreateModal()">✕</button>
+    <!-- Финал -->
+    <div id="screen-finished" class="host-screen hidden">
+      <div class="finished-title"><h2>Игра завершена</h2></div>
+      <div id="final-leaderboard" class="leaderboard"></div>
+      <div class="host-controls">
+        <a href="/game/export/{{ session_id }}" class="btn btn-accent">Скачать Excel</a>
+        <a href="/dashboard" class="btn btn-primary">В дашборд</a>
+      </div>
     </div>
-
-    <div class="field">
-      <label>Название квиза</label>
-      <input type="text" id="quiz-title" placeholder="Например: История России">
-    </div>
-
-    <div id="questions-list"></div>
-
-    <button class="btn btn-ghost btn-full" onclick="addQuestion()">+ Добавить вопрос</button>
-
-    <div id="create-error" class="form-error"></div>
-
-    <div class="modal-footer">
-      <button class="btn btn-outline" onclick="hideCreateModal()">Отмена</button>
-      <button class="btn btn-primary" onclick="saveQuiz()">Сохранить квиз</button>
-    </div>
-  </div>
-</div>
-
-<!-- Модалка управления игрой -->
-<div id="game-modal" class="modal hidden">
-  <div class="modal-backdrop" onclick="hideGameModal()"></div>
-  <div class="modal-box">
-    <div class="modal-header">
-      <h2 id="game-modal-title">Управление игрой</h2>
-      <button class="modal-close" onclick="hideGameModal()">✕</button>
-    </div>
-    <div id="game-modal-body"></div>
   </div>
 </div>
 {% endblock %}
 
 {% block scripts %}
-<script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+<script>
+  const SESSION_ID = "{{ session_id }}";
+  const PIN = '{{ pin }}';
+  let currentQuestionId = null;
+  let statsShown = false;
+  let pollingInterval = null;
+
+  function startPolling() {
+    pollingInterval = setInterval(pollStatus, 2500);
+    pollStatus();
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch(`/game/status/${PIN}`);
+      const data = await res.json();
+      if (!data.success) return;
+
+      document.getElementById('participants-badge').textContent = `${data.participants_count} участников`;
+
+      if (data.status === 'waiting') {
+        // nothing dynamic needed
+      } else if (data.status === 'active') {
+        showScreen('question');
+        renderQuestion(data);
+      } else if (data.status === 'finished') {
+        clearInterval(pollingInterval);
+        showScreen('finished');
+        renderLeaderboard(data.leaderboard);
+      }
+    } catch(e) {}
+  }
+
+  function renderQuestion(data) {
+    const q = data.question;
+    if (currentQuestionId === q.id && statsShown) return;
+    if (currentQuestionId !== q.id) {
+      statsShown = false;
+      document.getElementById('answer-stats').classList.add('hidden');
+      document.getElementById('stats-btn').style.display = '';
+    }
+    currentQuestionId = q.id;
+
+    const idx = data.current_index + 1;
+    const total = data.total_questions;
+    document.getElementById('q-num').textContent = String(idx).padStart(2, '0');
+    document.getElementById('q-total').textContent = `/ ${total}`;
+    document.getElementById('progress-fill').style.width = `${(idx / total) * 100}%`;
+    document.getElementById('question-text').textContent = q.text;
+
+    const media = document.getElementById('question-media');
+    media.innerHTML = q.media_url ? `<img src="${q.media_url}" class="q-media">` : '';
+
+    const answersEl = document.getElementById('answers-display');
+    answersEl.innerHTML = q.answers.map(a =>
+      `<div class="host-answer">${a.text}</div>`
+    ).join('');
+
+    const isLast = data.current_index + 1 >= data.total_questions;
+    document.getElementById('next-btn').textContent = isLast ? 'Завершить ✓' : 'Следующий →';
+  }
+
+  async function showStats() {
+    if (!currentQuestionId) return;
+    const res = await fetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
+    const data = await res.json();
+    const el = document.getElementById('answer-stats');
+    const dist = data.distribution || {};
+    const total = data.total || 0;
+    el.innerHTML = `<div class="stats-title">Ответили: ${total}</div>` +
+      Object.entries(dist).map(([text, count]) => {
+        const pct = total ? Math.round(count / total * 100) : 0;
+        return `<div class="stat-row"><span>${text}</span><div class="stat-bar"><div style="width:${pct}%"></div></div><span>${count}</span></div>`;
+      }).join('');
+    el.classList.remove('hidden');
+    statsShown = true;
+    document.getElementById('stats-btn').style.display = 'none';
+  }
+
+  async function hostAction() {
+    const res = await fetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
+    const data = await res.json();
+    if (!data.success) return;
+    if (data.finished) {
+      clearInterval(pollingInterval);
+      showScreen('finished');
+      const lb = await fetch(`/game/leaderboard/${SESSION_ID}`);
+      const lbData = await lb.json();
+      renderLeaderboard(lbData.leaderboard);
+    } else {
+      statsShown = false;
+      pollStatus();
+    }
+  }
+
+  function renderLeaderboard(lb) {
+    const medals = ['🥇', '🥈', '🥉'];
+    document.getElementById('final-leaderboard').innerHTML = lb.map((p, i) =>
+      `<div class="lb-row ${i < 3 ? 'lb-top' : ''}">
+        <span class="lb-place">${medals[i] || i + 1}</span>
+        <span class="lb-name">${p.name}</span>
+        <span class="lb-score">${p.score}</span>
+      </div>`
+    ).join('');
+  }
+
+  function showScreen(name) {
+    document.querySelectorAll('.host-screen').forEach(s => s.classList.add('hidden'));
+    document.getElementById(`screen-${name}`).classList.remove('hidden');
+  }
+
+  function copyPin() {
+    navigator.clipboard.writeText(PIN);
+  }
+
+  startPolling();
+</script>
 {% endblock %}
