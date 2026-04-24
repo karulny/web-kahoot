@@ -35,21 +35,21 @@ def index():
 def auth_page():
     if session.get('user_id'):
         return redirect(url_for('dashboard'))
-    return render_template('auth.html')
+    return render_template('index.html')
 
 
 @app.route('/dashboard')
 def dashboard():
     if not session.get('user_id'):
         return redirect(url_for('auth_page'))
-    return render_template('dashboard.html')
+    return render_template('auth.html')          # auth.html содержит дашборд квизов
 
 
 @app.route('/host/<int:session_id>/<pin>')
 def host_page(session_id, pin):
     if not session.get('user_id'):
         return redirect(url_for('auth_page'))
-    return render_template('host.html', session_id=session_id, pin=pin)
+    return render_template('dashboard.html', session_id=session_id, pin=pin)  # dashboard.html содержит хост-страницу
 
 
 @app.route('/play/<pin>')
