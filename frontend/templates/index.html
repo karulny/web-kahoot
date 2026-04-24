@@ -1,63 +1,99 @@
 {% extends "base.html" %}
-{% block title %}КВИЗСТРОЙ — Играй и побеждай{% endblock %}
+{% block title %}Вход — КВИЗСТРОЙ{% endblock %}
+{% block navbar %}{% endblock %}
 
 {% block content %}
-<section class="hero">
-  <div class="hero-bg">
-    <div class="orb orb-1"></div>
-    <div class="orb orb-2"></div>
-    <div class="orb orb-3"></div>
+<div class="auth-page">
+  <div class="auth-left">
+    <a href="/" class="auth-logo">КВИЗ<span>СТРОЙ</span></a>
+    <div class="deco-text"><em>Создавай.</em><br>Играй.<br>Получай данные.</div>
   </div>
-  <div class="hero-content">
-    <div class="hero-badge">🎯 Квизы в реальном времени</div>
-    <h1 class="hero-title">Создавай квизы.<br><span>Взрывай</span> аудиторию.</h1>
-    <p class="hero-sub">Платформа для интерактивных опросов и игр на занятиях и мероприятиях</p>
-    <div class="hero-actions">
-      <a href="/auth" class="btn btn-primary btn-lg">Создать квиз</a>
-      <div class="pin-join">
-        <input type="text" id="pinInput" placeholder="Введи PIN-код" maxlength="8" class="pin-input">
-        <button class="btn btn-accent btn-lg" onclick="goJoin()">Войти в игру →</button>
-      </div>
-    </div>
-  </div>
-</section>
 
-<section class="features">
-  <div class="container">
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <h3>Real-time</h3>
-        <p>Вопросы появляются у всех участников одновременно</p>
+  <div class="auth-right">
+    <div class="auth-box">
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-tab="login">Вход</button>
+        <button class="auth-tab" data-tab="register">Регистрация</button>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">📊</div>
-        <h3>Статистика</h3>
-        <p>Распределение ответов в реальном времени после каждого вопроса</p>
+
+      <div id="tab-login" class="auth-form">
+        <h2>Вход</h2>
+        <p class="auth-hint">Управляй квизами</p>
+        <div class="field">
+          <label>Логин</label>
+          <input type="text" id="login-username" placeholder="логин" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div id="login-error" class="form-error"></div>
+        <button class="btn btn-primary btn-full" onclick="doLogin()">Войти</button>
       </div>
-      <div class="feature-card">
-        <div class="feature-icon">📥</div>
-        <h3>Выгрузка</h3>
-        <p>Результаты игры одной кнопкой в Excel</p>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🔗</div>
-        <h3>Без регистрации</h3>
-        <p>Участники входят по PIN, ссылке или QR-коду</p>
+
+      <div id="tab-register" class="auth-form hidden">
+        <h2>Регистрация</h2>
+        <p class="auth-hint">Займёт 30 секунд</p>
+        <div class="field">
+          <label>Логин</label>
+          <input type="text" id="reg-username" placeholder="от 3 символов" autocomplete="username">
+        </div>
+        <div class="field">
+          <label>Пароль</label>
+          <input type="password" id="reg-password" placeholder="мин. 8 симв., цифра, заглавная" autocomplete="new-password">
+        </div>
+        <div id="reg-error" class="form-error"></div>
+        <button class="btn btn-primary btn-full" onclick="doRegister()">Создать аккаунт</button>
       </div>
     </div>
   </div>
-</section>
+</div>
 {% endblock %}
 
 {% block scripts %}
 <script>
-  function goJoin() {
-    const pin = document.getElementById('pinInput').value.trim().toUpperCase();
-    if (pin) location.href = `/play/${pin}`;
+  document.querySelectorAll('.auth-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.auth-form').forEach(f => f.classList.add('hidden'));
+      tab.classList.add('active');
+      document.getElementById(`tab-${tab.dataset.tab}`).classList.remove('hidden');
+    });
+  });
+
+  async function doLogin() {
+    const username = document.getElementById('login-username').value;
+    const password = document.getElementById('login-password').value;
+    const err = document.getElementById('login-error');
+    err.textContent = '';
+    const res = await fetch('/auth/login', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (data.success) location.href = '/dashboard';
+    else err.textContent = data.message;
   }
-  document.getElementById('pinInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter') goJoin();
+
+  async function doRegister() {
+    const username = document.getElementById('reg-username').value;
+    const password = document.getElementById('reg-password').value;
+    const err = document.getElementById('reg-error');
+    err.textContent = '';
+    const res = await fetch('/auth/register', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({username, password})
+    });
+    const data = await res.json();
+    if (data.success) location.href = '/dashboard';
+    else err.textContent = data.message;
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      const active = document.querySelector('.auth-tab.active').dataset.tab;
+      active === 'login' ? doLogin() : doRegister();
+    }
   });
 </script>
 {% endblock %}
