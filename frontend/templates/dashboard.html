@@ -59,7 +59,7 @@
 
 {% block scripts %}
 <script>
-  const SESSION_ID = {{ session_id }};
+  const SESSION_ID = "{{ session_id }}";
   const PIN = '{{ pin }}';
   let currentQuestionId = null;
   let statsShown = false;
