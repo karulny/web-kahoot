@@ -180,5 +180,21 @@ async function saveQuiz() {
     err.textContent = data.message;
   }
 }
+// Функция для копирования PIN-кода в буфер обмена
+function copyPin(pin) {
+    navigator.clipboard.writeText(pin).then(() => {
+        alert(`PIN ${pin} скопирован!`);
+    }).catch(err => {
+        console.error('Ошибка копирования:', err);
+    });
+}
 
+// Функция для перехода на страницу хоста (если она вызывается отдельно)
+function hostAction(sessionId, pin) {
+    if (sessionId && pin) {
+        location.href = `/host/${sessionId}/${pin}`;
+    } else {
+        console.error("Недостаточно данных для перехода: ", sessionId, pin);
+    }
+}
 loadQuizzes();
