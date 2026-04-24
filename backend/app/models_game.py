@@ -30,8 +30,8 @@ class ParticipantAnswer(db.Model):
     __tablename__ = 'participant_answers'
     id = db.Column(db.Integer, primary_key=True)
     participant_id = db.Column(db.Integer, db.ForeignKey('session_participants.id'), nullable=False)
-    question_id = db.Column(db.Integer, db.ForeignKey('questions.id'), nullable=False)
-    answer_option_id = db.Column(db.Integer, db.ForeignKey('answer_options.id'), nullable=True)
+    question_id = db.Column(db.Integer, db.ForeignKey('questions.id', ondelete='SET NULL'), nullable=True)
+    answer_option_id = db.Column(db.Integer, db.ForeignKey('answer_options.id', ondelete='SET NULL'), nullable=True)
     text_answer = db.Column(db.Text, nullable=True)
     is_correct = db.Column(db.Boolean, default=False)
     answered_at = db.Column(db.DateTime, default=datetime.utcnow)
