@@ -14,6 +14,6 @@ def login_required(f):
         except jwt.ExpiredSignatureError:
             return jsonify({"success": False, "message": "Время токена истекло"}), 401
         except jwt.InvalidTokenError:
-            return jsonify({"success": False, "message": "Неправильный токен"})
+            return jsonify({"success": False, "message": "Неправильный токен"}), 401
         return f(*args, **kwargs)
     return decorated_function

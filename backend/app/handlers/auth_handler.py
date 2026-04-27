@@ -13,10 +13,8 @@ def login():
 
     result = login_user(username, password)
     if result.get("success"):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        request.user_id = payload['user_id']
-        return jsonify(result), 200
+        token = jwt.encode({"user_id": result['user_id']}, app.config['SECRET_KEY'], algorithm="HS256")
+        return jsonify({"success": True, "token": token}), 200
 
     return jsonify(result), 401
 
@@ -30,23 +28,14 @@ def register():
 
     result = register_user(username, password)
     if result.get("success"):
-        token = request.headers.get('Authorization', '').replace('Bearer ', '')
-        payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-        request.user_id = payload['user_id']
-        return jsonify(result), 201
-
+        token = jwt.encode({"user_id": result['user_id']}, app.config['SECRET_KEY'], algorithm="HS256")
+        return jsonify({"success": True, "token": token}), 201
     return jsonify(result), 400
 
 @auth_bp.route('/logout', methods=['POST'])
 def logout():
-    session.clear()
     return jsonify({"success": True}), 200
 
 @auth_bp.route('/me', methods=['GET'])
 def me():
-    token = request.headers.get('Authorization', '').replace('Bearer ', '')
-    payload = jwt.decode(token, app.config['SECRET_KEY'], algorithms=["HS256"])
-    request.user_id = payload['user_id']
-    if not payload:
-        return jsonify({"success": False, "message": "Не авторизован"}), 401
     return jsonify({"success": True, "user_id": request.user_id}), 200

@@ -23,13 +23,13 @@ def create():
         if len(answers) < 2 or not any(a.get('is_correct') for a in answers):
             return jsonify({"success": False, "message": f"Вопрос {i}: неверные ответы"}), 400
 
-    result = create_quiz(title, session['user_id'], questions)
+    result = create_quiz(title, request.user_id, questions)
     return jsonify(result), 201 if result['success'] else 500
 
 @quiz_bp.route('/', methods=['GET'])
 @login_required
 def list_quizzes():
-    return jsonify(get_quizzes_by_author(session['user_id'])), 200
+    return jsonify(get_quizzes_by_author(request.user_id)), 200
 
 @quiz_bp.route('/<int:quiz_id>', methods=['GET'])
 @login_required
@@ -40,6 +40,6 @@ def get_one(quiz_id):
 @quiz_bp.route('/<int:quiz_id>', methods=['DELETE'])
 @login_required
 def remove(quiz_id):
-    result = delete_quiz(quiz_id, session['user_id'])
+    result = delete_quiz(quiz_id, request.user_id)
     status = 200 if result['success'] else (403 if 'прав' in result.get('message', '') else 404)
     return jsonify(result), status
