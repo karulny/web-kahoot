@@ -28,27 +28,33 @@ with app.app_context():
 
 @app.route('/')
 def index():
-    ...
+    return render_template('index.html')
 
 
 @app.route('/auth')
 def auth_page():
-    ...
+    if session.get('user_id'):
+        return redirect(url_for('dashboard'))
+    return render_template('index.html')
 
 
 @app.route('/dashboard')
 def dashboard():
-    ...
+    if not session.get('user_id'):
+        return redirect(url_for('auth_page'))
+    return render_template('auth.html')          # auth.html содержит дашборд квизов
 
 
 @app.route('/host/<int:session_id>/<pin>')
-def host_page():
-    ...
+def host_page(session_id, pin):
+    if not session.get('user_id'):
+        return redirect(url_for('auth_page'))
+    return render_template('dashboard.html', session_id=session_id, pin=pin)  # dashboard.html содержит хост-страницу
 
 
 @app.route('/play/<pin>')
-def play_page():
-    ...
+def play_page(pin):
+    return render_template('play.html', pin=pin.upper())
 
 
 if __name__ == '__main__':
