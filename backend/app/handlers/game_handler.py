@@ -12,7 +12,7 @@ game_bp = Blueprint('game', __name__)
 @game_bp.route('/start/<int:quiz_id>', methods=['POST'])
 @login_required
 def start(quiz_id):
-    result = start_session(quiz_id, session['user_id'])
+    result = start_session(quiz_id, request.user_id)
     return jsonify(result), 200 if result['success'] else 400
 
 
@@ -25,7 +25,6 @@ def join():
         return jsonify({"success": False, "message": "Укажите PIN и имя"}), 400
     result = join_session(pin, name)
     if result.get('success'):
-        session['participant_id'] = result['participant_id']
         session['session_id'] = result['session_id']
     return jsonify(result), 200 if result['success'] else 400
 
@@ -33,20 +32,20 @@ def join():
 @game_bp.route('/next/<int:session_id>', methods=['POST'])
 @login_required
 def next_q(session_id):
-    result = next_question(session_id, session['user_id'])
+    result = next_question(session_id, request.user_id)
     return jsonify(result), 200 if result['success'] else 400
 
 
 @game_bp.route('/status/<pin>', methods=['GET'])
 def status(pin):
-    p_id = session.get('participant_id')
+    p_id = request.args.get('participant_id')
     result = get_game_status(pin, p_id)
     return jsonify(result), 200 if result['success'] else 404
 
 
 @game_bp.route('/answer', methods=['POST'])
 def answer():
-    p_id = session.get('participant_id')
+    p_id = request.args.get('participant_id')
     if not p_id:
         return jsonify({"success": False, "message": "Не в игре"}), 401
 
