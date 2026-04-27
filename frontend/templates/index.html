@@ -54,7 +54,6 @@
 
 {% block scripts %}
 <script>
-  // Логика переключения табов и fetch-запросы (оставляем без изменений)
   document.querySelectorAll('.auth-tab').forEach(tab => {
     tab.addEventListener('click', () => {
       document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
