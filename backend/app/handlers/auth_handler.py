@@ -1,5 +1,6 @@
 from flask import Blueprint, request, jsonify, session, current_app as app
 from backend.app.services.auth_service import login_user, register_user
+from backend.app.middlwares.auth import login_required
 import jwt
 auth_bp = Blueprint('auth', __name__)
 
@@ -37,5 +38,6 @@ def logout():
     return jsonify({"success": True}), 200
 
 @auth_bp.route('/me', methods=['GET'])
+@login_required
 def me():
     return jsonify({"success": True, "user_id": request.user_id}), 200

@@ -24,8 +24,6 @@ def join():
     if not pin or not name:
         return jsonify({"success": False, "message": "Укажите PIN и имя"}), 400
     result = join_session(pin, name)
-    if result.get('success'):
-        session['session_id'] = result['session_id']
     return jsonify(result), 200 if result['success'] else 400
 
 
@@ -38,14 +36,16 @@ def next_q(session_id):
 
 @game_bp.route('/status/<pin>', methods=['GET'])
 def status(pin):
-    p_id = request.args.get('participant_id')
+    data = request.get_json() or {}
+    p_id = data.get('participant_id')
     result = get_game_status(pin, p_id)
     return jsonify(result), 200 if result['success'] else 404
 
 
 @game_bp.route('/answer', methods=['POST'])
 def answer():
-    p_id = request.args.get('participant_id')
+    data = request.get_json() or {}
+    p_id = data.get('participant_id')
     if not p_id:
         return jsonify({"success": False, "message": "Не в игре"}), 401
 
