@@ -1,5 +1,23 @@
 let questionCount = 0;
 
+function AuthFetch(url, options = {}){
+  const token = localStorage.getItem("token");
+  return (url, {
+    ...options,
+        headers: {
+        'Content-Type': 'application/json',
+          'Authorization': 'Bearer' + token,
+          ...(options.headers || {})
+        }
+      }
+
+  )
+
+  }
+
+
+
+
 async function loadQuizzes() {
   const res = await fetch('/quiz/');
   const data = await res.json();

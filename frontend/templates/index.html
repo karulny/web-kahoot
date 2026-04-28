@@ -73,8 +73,10 @@
       body: JSON.stringify({username, password})
     });
     const data = await res.json();
-    if (data.success) location.href = '/dashboard';
-    else err.textContent = data.message;
+    if (data.success){
+      localStorage.setItem('token', data.token);
+      location.href = '/dashboard.html';
+    }
   }
 
   async function doRegister() {
@@ -87,7 +89,10 @@
       body: JSON.stringify({username, password})
     });
     const data = await res.json();
-    if (data.success) location.href = '/dashboard';
+    if (data.success){
+      localStorage.setItem('token', data.token);
+      location.href = '/dashboard.html';
+    }
     else err.textContent = data.message;
   }
 
