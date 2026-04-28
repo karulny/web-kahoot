@@ -6,7 +6,7 @@ class GameSession(db.Model):
     __tablename__ = 'game_sessions'
     id = db.Column(db.Integer, primary_key=True)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
-    status = db.Column(db.String(20), default='waiting')  # waiting, active, finished
+    status = db.Column(db.String(20), default='waiting')
     current_question_index = db.Column(db.Integer, default=0)
     started_at = db.Column(db.DateTime, nullable=True)
     finished_at = db.Column(db.DateTime, nullable=True)

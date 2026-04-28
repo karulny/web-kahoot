@@ -32,8 +32,8 @@ class Question(db.Model):
     __tablename__ = 'questions'
     id = db.Column(db.Integer, primary_key=True)
     text = db.Column(db.Text, nullable=False)
-    media_url = db.Column(db.String(255), nullable=True)  # Путь к картинке/аудио, если есть
-    question_type = db.Column(db.String(20), nullable=False)  # 'single', 'multiple', 'text', 'poll'
+    media_url = db.Column(db.String(255), nullable=True)
+    question_type = db.Column(db.String(20), nullable=False)
     quiz_id = db.Column(db.Integer, db.ForeignKey('quizzes.id'), nullable=False)
 
     # Связь с вариантами ответов
