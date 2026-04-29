@@ -1,7 +1,10 @@
-from flask import Blueprint, request, jsonify, session
+from flask import Blueprint, request, jsonify, current_app as app
 from backend.app.services.auth_service import login_user, register_user
+from backend.app.middlwares.auth import login_required
+import jwt
 
 auth_bp = Blueprint('auth', __name__)
+
 
 @auth_bp.route('/login', methods=['POST'])
 def login():
@@ -13,10 +16,15 @@ def login():
 
     result = login_user(username, password)
     if result.get("success"):
-        session['user_id'] = result['user_id']
-        return jsonify(result), 200
+        token = jwt.encode(
+            {"user_id": result['user_id']},
+            app.config['SECRET_KEY'],
+            algorithm="HS256"
+        )
+        return jsonify({"success": True, "token": token}), 200
 
     return jsonify(result), 401
+
 
 @auth_bp.route('/register', methods=['POST'])
 def register():
@@ -28,19 +36,23 @@ def register():
 
     result = register_user(username, password)
     if result.get("success"):
-        session['user_id'] = result['user_id']
-        return jsonify(result), 201
+        token = jwt.encode(
+            {"user_id": result['user_id']},
+            app.config['SECRET_KEY'],
+            algorithm="HS256"
+        )
+        return jsonify({"success": True, "token": token}), 201
 
     return jsonify(result), 400
 
+
 @auth_bp.route('/logout', methods=['POST'])
+@login_required
 def logout():
-    session.clear()
-    return jsonify({"success": True}), 200
+    return jsonify({"success": True, "message": "Выход выполнен"}), 200
+
 
 @auth_bp.route('/me', methods=['GET'])
+@login_required
 def me():
-    user_id = session.get('user_id')
-    if not user_id:
-        return jsonify({"success": False, "message": "Не авторизован"}), 401
-    return jsonify({"success": True, "user_id": user_id}), 200
+    return jsonify({"success": True, "user_id": request.user_id}), 200

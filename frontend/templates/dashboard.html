@@ -14,12 +14,13 @@
   </div>
 
   <div class="host-body">
+
     <!-- Ожидание -->
     <div id="screen-waiting" class="host-screen">
       <div class="waiting-content">
         <h2>Ожидание участников</h2>
         <p>PIN: <strong style="font-family:var(--mono);color:var(--accent)">{{ pin }}</strong></p>
-        <p class="link-preview">{{ request.host_url }}play/{{ pin }}</p>
+        <p class="link-preview" id="play-link"></p>
         <div id="joined-list" class="joined-list"></div>
         <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
       </div>
@@ -53,6 +54,7 @@
         <a href="/dashboard" class="btn btn-primary">В дашборд</a>
       </div>
     </div>
+
   </div>
 </div>
 {% endblock %}
@@ -64,9 +66,24 @@
   let currentQuestionId = null;
   let statsShown = false;
   let pollingInterval = null;
+  let lastParticipantIds = '';
+  // Флаг: ведущий нажал «Начать», лобби закрыто
+  let lobbyStarted = false;
+
+  function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    return fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        ...(options.headers || {})
+      }
+    });
+  }
 
   function startPolling() {
-    pollingInterval = setInterval(pollStatus, 2500);
+    pollingInterval = setInterval(pollStatus, 2000);
     pollStatus();
   }
 
@@ -76,11 +93,18 @@
       const data = await res.json();
       if (!data.success) return;
 
-      document.getElementById('participants-badge').textContent = `${data.participants_count} участников`;
+      document.getElementById('participants-badge').textContent =
+        `${data.participants_count} участник${pEnding(data.participants_count)}`;
 
       if (data.status === 'waiting') {
-        // nothing dynamic needed
+        // Пока ведущий не нажал «Начать» — держим экран лобби
+        if (!lobbyStarted) {
+          showScreen('waiting');
+          renderParticipants(data.participants || []);
+        }
       } else if (data.status === 'active') {
+        // Сервер активен — значит игра уже шла (например, перезагрузка страницы)
+        lobbyStarted = true;
         showScreen('question');
         renderQuestion(data);
       } else if (data.status === 'finished') {
@@ -89,6 +113,21 @@
         renderLeaderboard(data.leaderboard);
       }
     } catch(e) {}
+  }
+
+  function renderParticipants(participants) {
+    const ids = participants.map(p => p.id).join(',');
+    if (ids === lastParticipantIds) return;
+    lastParticipantIds = ids;
+
+    const joined = document.getElementById('joined-list');
+    if (!participants.length) {
+      joined.innerHTML = '<span style="color:var(--text3);font-size:.82rem">Никто ещё не присоединился</span>';
+      return;
+    }
+    joined.innerHTML = participants.map(p =>
+      `<span class="joined-tag">${escapeHtml(p.name)}</span>`
+    ).join('');
   }
 
   function renderQuestion(data) {
@@ -113,7 +152,7 @@
 
     const answersEl = document.getElementById('answers-display');
     answersEl.innerHTML = q.answers.map(a =>
-      `<div class="host-answer">${a.text}</div>`
+      `<div class="host-answer">${escapeHtml(a.text)}</div>`
     ).join('');
 
     const isLast = data.current_index + 1 >= data.total_questions;
@@ -122,7 +161,7 @@
 
   async function showStats() {
     if (!currentQuestionId) return;
-    const res = await fetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
+    const res = await authFetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
     const data = await res.json();
     const el = document.getElementById('answer-stats');
     const dist = data.distribution || {};
@@ -130,7 +169,11 @@
     el.innerHTML = `<div class="stats-title">Ответили: ${total}</div>` +
       Object.entries(dist).map(([text, count]) => {
         const pct = total ? Math.round(count / total * 100) : 0;
-        return `<div class="stat-row"><span>${text}</span><div class="stat-bar"><div style="width:${pct}%"></div></div><span>${count}</span></div>`;
+        return `<div class="stat-row">
+          <span>${escapeHtml(text)}</span>
+          <div class="stat-bar"><div style="width:${pct}%"></div></div>
+          <span>${count}</span>
+        </div>`;
       }).join('');
     el.classList.remove('hidden');
     statsShown = true;
@@ -138,9 +181,13 @@
   }
 
   async function hostAction() {
-    const res = await fetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
+    // Устанавливаем флаг сразу — pollStatus больше не будет перекрывать экран лобби
+    lobbyStarted = true;
+
+    const res = await authFetch(`/game/next/${SESSION_ID}`, { method: 'POST' });
     const data = await res.json();
     if (!data.success) return;
+
     if (data.finished) {
       clearInterval(pollingInterval);
       showScreen('finished');
@@ -149,6 +196,8 @@
       renderLeaderboard(lbData.leaderboard);
     } else {
       statsShown = false;
+      // Переключаем экран немедленно, не ждём следующего poll
+      showScreen('question');
       pollStatus();
     }
   }
@@ -158,7 +207,7 @@
     document.getElementById('final-leaderboard').innerHTML = lb.map((p, i) =>
       `<div class="lb-row ${i < 3 ? 'lb-top' : ''}">
         <span class="lb-place">${medals[i] || i + 1}</span>
-        <span class="lb-name">${p.name}</span>
+        <span class="lb-name">${escapeHtml(p.name)}</span>
         <span class="lb-score">${p.score}</span>
       </div>`
     ).join('');
@@ -170,9 +219,33 @@
   }
 
   function copyPin() {
-    navigator.clipboard.writeText(PIN);
+    navigator.clipboard.writeText(PIN).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = '⧉', 1500);
+    });
   }
 
-  startPolling();
+  function escapeHtml(str = '') {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function pEnding(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return '';
+    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'а';
+    return 'ов';
+  }
+
+  // Ссылка для участников — берём origin из браузера, чтобы порт был правильным
+  document.getElementById('play-link').textContent =
+    window.location.origin + '/play/' + PIN;
+
+  if (!localStorage.getItem('token')) {
+    location.href = '/';
+  } else {
+    startPolling();
+  }
 </script>
 {% endblock %}

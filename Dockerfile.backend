@@ -1,13 +1,11 @@
-FROM python:3.14-slim AS python-deps
+FROM python:3.12-slim AS python-deps
 
 WORKDIR /install
-
 COPY requirements.txt .
 RUN pip install --no-cache-dir --prefix=/install/pkg -r requirements.txt
 
 
-
-FROM python:3.14-slim AS runtime
+FROM python:3.12-slim AS runtime
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app \
@@ -15,14 +13,14 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /app
 
-# Copy installed packages from build stage
 COPY --from=python-deps /install/pkg /usr/local
-
-# Copy application source
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
 EXPOSE 5000
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=5 \
+  CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:5000/health')"
 
 CMD ["python", "-m", "gunicorn", \
      "--bind", "0.0.0.0:5000", \

@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, send_file
+from flask import Blueprint, request, jsonify, send_file
 from backend.app.middlwares.auth import login_required
 from backend.app.services.game_service import (
     start_session, join_session, next_question,
@@ -12,7 +12,7 @@ game_bp = Blueprint('game', __name__)
 @game_bp.route('/start/<int:quiz_id>', methods=['POST'])
 @login_required
 def start(quiz_id):
-    result = start_session(quiz_id, session['user_id'])
+    result = start_session(quiz_id, request.user_id)
     return jsonify(result), 200 if result['success'] else 400
 
 
@@ -24,33 +24,31 @@ def join():
     if not pin or not name:
         return jsonify({"success": False, "message": "Укажите PIN и имя"}), 400
     result = join_session(pin, name)
-    if result.get('success'):
-        session['participant_id'] = result['participant_id']
-        session['session_id'] = result['session_id']
     return jsonify(result), 200 if result['success'] else 400
 
 
 @game_bp.route('/next/<int:session_id>', methods=['POST'])
 @login_required
 def next_q(session_id):
-    result = next_question(session_id, session['user_id'])
+    result = next_question(session_id, request.user_id)
     return jsonify(result), 200 if result['success'] else 400
 
 
 @game_bp.route('/status/<pin>', methods=['GET'])
 def status(pin):
-    p_id = session.get('participant_id')
+    # GET-запрос — participant_id передаётся как query param: /game/status/ABC?participant_id=5
+    p_id = request.args.get('participant_id')
     result = get_game_status(pin, p_id)
     return jsonify(result), 200 if result['success'] else 404
 
 
 @game_bp.route('/answer', methods=['POST'])
 def answer():
-    p_id = session.get('participant_id')
+    data = request.get_json() or {}
+    p_id = data.get('participant_id')
     if not p_id:
         return jsonify({"success": False, "message": "Не в игре"}), 401
 
-    data = request.get_json() or {}
     result = submit_answer(
         participant_id=p_id,
         question_id=data.get('question_id'),

@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Квизы — КВИЗСТРОЙ{% endblock %}
 
+{% block navbar %}
+<nav class="nav">
+  <a class="nav-logo" href="/dashboard">КВИЗ<span>СТРОЙ</span></a>
+  <div class="nav-right">
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Выйти</button>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard">
   <div class="container">
@@ -18,7 +27,7 @@
   </div>
 </div>
 
-<!-- Создание квиза -->
+<!-- ── СОЗДАНИЕ ── -->
 <div id="create-modal" class="modal hidden">
   <div class="modal-backdrop" onclick="hideCreateModal()"></div>
   <div class="modal-box">
@@ -41,6 +50,35 @@
     <div class="modal-footer">
       <button class="btn btn-ghost" onclick="hideCreateModal()">Отмена</button>
       <button class="btn btn-primary" onclick="saveQuiz()">Сохранить</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── РЕДАКТИРОВАНИЕ ── -->
+<div id="edit-modal" class="modal hidden">
+  <div class="modal-backdrop" onclick="hideEditModal()"></div>
+  <div class="modal-box">
+    <div class="modal-header">
+      <h2>Редактировать квиз</h2>
+      <button class="modal-close" onclick="hideEditModal()">✕</button>
+    </div>
+
+    <input type="hidden" id="edit-quiz-id">
+
+    <div class="field">
+      <label>Название</label>
+      <input type="text" id="edit-quiz-title" placeholder="Название квиза">
+    </div>
+
+    <div id="edit-questions-list"></div>
+
+    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:4px" onclick="addEditQuestion()">+ Добавить вопрос</button>
+
+    <div id="edit-error" class="form-error" style="margin-top:8px"></div>
+
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="hideEditModal()">Отмена</button>
+      <button class="btn btn-primary" onclick="saveEditQuiz()">Сохранить изменения</button>
     </div>
   </div>
 </div>
