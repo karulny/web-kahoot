@@ -15,6 +15,7 @@ WORKDIR /app
 
 COPY --from=python-deps /install/pkg /usr/local
 COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
 EXPOSE 5000
 
