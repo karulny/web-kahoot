@@ -20,8 +20,7 @@
       <div class="waiting-content">
         <h2>Ожидание участников</h2>
         <p>PIN: <strong style="font-family:var(--mono);color:var(--accent)">{{ pin }}</strong></p>
-        <p class="link-preview">{{ request.host_url }}play/{{ pin }}</p>
-        <!-- Имена участников появляются здесь по мере входа -->
+        <p class="link-preview" id="play-link"></p>
         <div id="joined-list" class="joined-list"></div>
         <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
       </div>
@@ -67,8 +66,9 @@
   let currentQuestionId = null;
   let statsShown = false;
   let pollingInterval = null;
-  // Следим за списком имён чтобы не перерисовывать без изменений
   let lastParticipantIds = '';
+  // Флаг: ведущий нажал «Начать», лобби закрыто
+  let lobbyStarted = false;
 
   function authFetch(url, options = {}) {
     const token = localStorage.getItem('token');
@@ -93,14 +93,18 @@
       const data = await res.json();
       if (!data.success) return;
 
-      // Значок участников
       document.getElementById('participants-badge').textContent =
         `${data.participants_count} участник${pEnding(data.participants_count)}`;
 
       if (data.status === 'waiting') {
-        showScreen('waiting');
-        renderParticipants(data.participants || []);
+        // Пока ведущий не нажал «Начать» — держим экран лобби
+        if (!lobbyStarted) {
+          showScreen('waiting');
+          renderParticipants(data.participants || []);
+        }
       } else if (data.status === 'active') {
+        // Сервер активен — значит игра уже шла (например, перезагрузка страницы)
+        lobbyStarted = true;
         showScreen('question');
         renderQuestion(data);
       } else if (data.status === 'finished') {
@@ -112,7 +116,6 @@
   }
 
   function renderParticipants(participants) {
-    // Перерисовываем только если список изменился
     const ids = participants.map(p => p.id).join(',');
     if (ids === lastParticipantIds) return;
     lastParticipantIds = ids;
@@ -178,9 +181,13 @@
   }
 
   async function hostAction() {
+    // Устанавливаем флаг сразу — pollStatus больше не будет перекрывать экран лобби
+    lobbyStarted = true;
+
     const res = await authFetch(`/game/next/${SESSION_ID}`, { method: 'POST' });
     const data = await res.json();
     if (!data.success) return;
+
     if (data.finished) {
       clearInterval(pollingInterval);
       showScreen('finished');
@@ -189,6 +196,8 @@
       renderLeaderboard(lbData.leaderboard);
     } else {
       statsShown = false;
+      // Переключаем экран немедленно, не ждём следующего poll
+      showScreen('question');
       pollStatus();
     }
   }
@@ -228,6 +237,10 @@
     if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'а';
     return 'ов';
   }
+
+  // Ссылка для участников — берём origin из браузера, чтобы порт был правильным
+  document.getElementById('play-link').textContent =
+    window.location.origin + '/play/' + PIN;
 
   if (!localStorage.getItem('token')) {
     location.href = '/';
