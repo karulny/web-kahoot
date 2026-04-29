@@ -86,7 +86,7 @@
     const data = await res.json();
     if (!data.success) { err.textContent = data.message; return; }
 
-    participantId = data.participant_id;
+    participantId = data.participant_id;  // сохраняем — будем передавать в каждом запросе
     document.getElementById('my-name-badge').textContent = name;
     showScreen('waiting');
     startPolling();
@@ -98,7 +98,11 @@
 
   async function pollStatus() {
     try {
-      const res = await fetch(`/game/status/${PIN}`);
+      // participant_id передаём как query param для GET запроса
+      const url = participantId
+        ? `/game/status/${PIN}?participant_id=${participantId}`
+        : `/game/status/${PIN}`;
+      const res = await fetch(url);
       const data = await res.json();
       if (!data.success) return;
 
@@ -136,7 +140,7 @@
     if (answered) {
       answersEl.innerHTML = `<div class="already-answered">Ответ принят</div>`;
     } else {
-      answersEl.innerHTML = q.answers.map((a, i) =>
+      answersEl.innerHTML = q.answers.map(a =>
         `<button class="play-answer-btn" onclick="submitAnswer(${q.id}, ${a.id}, this)">
           ${a.text}
         </button>`
@@ -152,7 +156,11 @@
 
     const res = await fetch('/game/answer', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({question_id: questionId, answer_option_id: optionId})
+      body: JSON.stringify({
+        participant_id: participantId,   // ← передаём participant_id в теле
+        question_id: questionId,
+        answer_option_id: optionId
+      })
     });
     const data = await res.json();
     if (!data.success) return;

@@ -73,9 +73,11 @@
       body: JSON.stringify({username, password})
     });
     const data = await res.json();
-    if (data.success){
+    if (data.success) {
       localStorage.setItem('token', data.token);
-      location.href = '/dashboard.html';
+      location.href = '/dashboard';  // ← без .html, это маршрут Flask
+    } else {
+      err.textContent = data.message;
     }
   }
 
@@ -89,11 +91,12 @@
       body: JSON.stringify({username, password})
     });
     const data = await res.json();
-    if (data.success){
+    if (data.success) {
       localStorage.setItem('token', data.token);
-      location.href = '/dashboard.html';
+      location.href = '/dashboard';
+    } else {
+      err.textContent = data.message;
     }
-    else err.textContent = data.message;
   }
 
   document.addEventListener('keydown', e => {

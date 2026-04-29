@@ -1,6 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Квизы — КВИЗСТРОЙ{% endblock %}
 
+{% block navbar %}
+<nav class="nav">
+  <a class="nav-logo" href="/dashboard">КВИЗ<span>СТРОЙ</span></a>
+  <div class="nav-right">
+    <button class="btn btn-ghost btn-sm" onclick="logout()">Выйти</button>
+  </div>
+</nav>
+{% endblock %}
+
 {% block content %}
 <div class="dashboard">
   <div class="container">
@@ -18,7 +27,6 @@
   </div>
 </div>
 
-<!-- Создание квиза -->
 <div id="create-modal" class="modal hidden">
   <div class="modal-backdrop" onclick="hideCreateModal()"></div>
   <div class="modal-box">
