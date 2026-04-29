@@ -80,6 +80,8 @@ def get_game_status(pin, participant_id=None):
         return {"success": False, "message": "Не найдено"}
 
     quiz = session.quiz
+    participants = session.participants  # список SessionParticipant
+
     result = {
         "success": True,
         "status": session.status,
@@ -87,7 +89,9 @@ def get_game_status(pin, participant_id=None):
         "quiz_title": quiz.title,
         "total_questions": len(quiz.questions),
         "current_index": session.current_question_index,
-        "participants_count": len(session.participants),
+        "participants_count": len(participants),
+        # Имена участников — нужны ведущему на экране ожидания
+        "participants": [{"id": p.id, "name": p.name} for p in participants],
     }
 
     if session.status == 'active':
@@ -147,7 +151,7 @@ def submit_answer(participant_id, question_id, answer_option_id=None, text_answe
 
 
 def get_leaderboard(session_id):
-    participants = SessionParticipant.query.filter_by(session_id=session_id)\
+    participants = SessionParticipant.query.filter_by(session_id=session_id) \
         .order_by(SessionParticipant.score.desc()).all()
     return [{"name": p.name, "score": p.score} for p in participants]
 

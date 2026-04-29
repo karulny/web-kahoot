@@ -14,12 +14,14 @@
   </div>
 
   <div class="host-body">
+
     <!-- Ожидание -->
     <div id="screen-waiting" class="host-screen">
       <div class="waiting-content">
         <h2>Ожидание участников</h2>
         <p>PIN: <strong style="font-family:var(--mono);color:var(--accent)">{{ pin }}</strong></p>
         <p class="link-preview">{{ request.host_url }}play/{{ pin }}</p>
+        <!-- Имена участников появляются здесь по мере входа -->
         <div id="joined-list" class="joined-list"></div>
         <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
       </div>
@@ -53,6 +55,7 @@
         <a href="/dashboard" class="btn btn-primary">В дашборд</a>
       </div>
     </div>
+
   </div>
 </div>
 {% endblock %}
@@ -64,8 +67,9 @@
   let currentQuestionId = null;
   let statsShown = false;
   let pollingInterval = null;
+  // Следим за списком имён чтобы не перерисовывать без изменений
+  let lastParticipantIds = '';
 
-  // Все запросы хоста идут с токеном
   function authFetch(url, options = {}) {
     const token = localStorage.getItem('token');
     return fetch(url, {
@@ -79,25 +83,23 @@
   }
 
   function startPolling() {
-    pollingInterval = setInterval(pollStatus, 2500);
+    pollingInterval = setInterval(pollStatus, 2000);
     pollStatus();
   }
 
   async function pollStatus() {
     try {
-      // /status — публичный, токен не нужен, participant_id передаём в query
       const res = await fetch(`/game/status/${PIN}`);
       const data = await res.json();
       if (!data.success) return;
 
-      document.getElementById('participants-badge').textContent = `${data.participants_count} участников`;
+      // Значок участников
+      document.getElementById('participants-badge').textContent =
+        `${data.participants_count} участник${pEnding(data.participants_count)}`;
 
       if (data.status === 'waiting') {
-        // обновляем список участников
-        const joined = document.getElementById('joined-list');
-        if (data.participants_count > 0) {
-          // список имён не приходит в статусе, просто показываем счётчик
-        }
+        showScreen('waiting');
+        renderParticipants(data.participants || []);
       } else if (data.status === 'active') {
         showScreen('question');
         renderQuestion(data);
@@ -107,6 +109,22 @@
         renderLeaderboard(data.leaderboard);
       }
     } catch(e) {}
+  }
+
+  function renderParticipants(participants) {
+    // Перерисовываем только если список изменился
+    const ids = participants.map(p => p.id).join(',');
+    if (ids === lastParticipantIds) return;
+    lastParticipantIds = ids;
+
+    const joined = document.getElementById('joined-list');
+    if (!participants.length) {
+      joined.innerHTML = '<span style="color:var(--text3);font-size:.82rem">Никто ещё не присоединился</span>';
+      return;
+    }
+    joined.innerHTML = participants.map(p =>
+      `<span class="joined-tag">${escapeHtml(p.name)}</span>`
+    ).join('');
   }
 
   function renderQuestion(data) {
@@ -131,7 +149,7 @@
 
     const answersEl = document.getElementById('answers-display');
     answersEl.innerHTML = q.answers.map(a =>
-      `<div class="host-answer">${a.text}</div>`
+      `<div class="host-answer">${escapeHtml(a.text)}</div>`
     ).join('');
 
     const isLast = data.current_index + 1 >= data.total_questions;
@@ -140,7 +158,6 @@
 
   async function showStats() {
     if (!currentQuestionId) return;
-    // stats — защищённый, нужен токен
     const res = await authFetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
     const data = await res.json();
     const el = document.getElementById('answer-stats');
@@ -149,7 +166,11 @@
     el.innerHTML = `<div class="stats-title">Ответили: ${total}</div>` +
       Object.entries(dist).map(([text, count]) => {
         const pct = total ? Math.round(count / total * 100) : 0;
-        return `<div class="stat-row"><span>${text}</span><div class="stat-bar"><div style="width:${pct}%"></div></div><span>${count}</span></div>`;
+        return `<div class="stat-row">
+          <span>${escapeHtml(text)}</span>
+          <div class="stat-bar"><div style="width:${pct}%"></div></div>
+          <span>${count}</span>
+        </div>`;
       }).join('');
     el.classList.remove('hidden');
     statsShown = true;
@@ -157,8 +178,7 @@
   }
 
   async function hostAction() {
-    // next — защищённый, нужен токен
-    const res = await authFetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
+    const res = await authFetch(`/game/next/${SESSION_ID}`, { method: 'POST' });
     const data = await res.json();
     if (!data.success) return;
     if (data.finished) {
@@ -178,7 +198,7 @@
     document.getElementById('final-leaderboard').innerHTML = lb.map((p, i) =>
       `<div class="lb-row ${i < 3 ? 'lb-top' : ''}">
         <span class="lb-place">${medals[i] || i + 1}</span>
-        <span class="lb-name">${p.name}</span>
+        <span class="lb-name">${escapeHtml(p.name)}</span>
         <span class="lb-score">${p.score}</span>
       </div>`
     ).join('');
@@ -190,10 +210,25 @@
   }
 
   function copyPin() {
-    navigator.clipboard.writeText(PIN);
+    navigator.clipboard.writeText(PIN).then(() => {
+      const btn = document.querySelector('.btn-copy');
+      btn.textContent = '✓';
+      setTimeout(() => btn.textContent = '⧉', 1500);
+    });
   }
 
-  // Если токена нет — редирект на логин
+  function escapeHtml(str = '') {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function pEnding(n) {
+    if (n % 10 === 1 && n % 100 !== 11) return '';
+    if ([2,3,4].includes(n % 10) && ![12,13,14].includes(n % 100)) return 'а';
+    return 'ов';
+  }
+
   if (!localStorage.getItem('token')) {
     location.href = '/';
   } else {
