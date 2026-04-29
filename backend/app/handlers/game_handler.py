@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify, session, send_file
+from flask import Blueprint, request, jsonify, send_file
 from backend.app.middlwares.auth import login_required
 from backend.app.services.game_service import (
     start_session, join_session, next_question,
@@ -36,8 +36,8 @@ def next_q(session_id):
 
 @game_bp.route('/status/<pin>', methods=['GET'])
 def status(pin):
-    data = request.get_json() or {}
-    p_id = data.get('participant_id')
+    # GET-запрос — participant_id передаётся как query param: /game/status/ABC?participant_id=5
+    p_id = request.args.get('participant_id')
     result = get_game_status(pin, p_id)
     return jsonify(result), 200 if result['success'] else 404
 
@@ -49,7 +49,6 @@ def answer():
     if not p_id:
         return jsonify({"success": False, "message": "Не в игре"}), 401
 
-    data = request.get_json() or {}
     result = submit_answer(
         participant_id=p_id,
         question_id=data.get('question_id'),
