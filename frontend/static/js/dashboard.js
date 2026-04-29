@@ -1,25 +1,19 @@
 let questionCount = 0;
 
-function AuthFetch(url, options = {}){
-  const token = localStorage.getItem("token");
-  return (url, {
+function authFetch(url, options = {}) {
+  const token = localStorage.getItem('token');
+  return fetch(url, {
     ...options,
-        headers: {
-        'Content-Type': 'application/json',
-          'Authorization': 'Bearer' + token,
-          ...(options.headers || {})
-        }
-      }
-
-  )
-
-  }
-
-
-
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + token,
+      ...(options.headers || {})
+    }
+  });
+}
 
 async function loadQuizzes() {
-  const res = await fetch('/quiz/');
+  const res = await authFetch('/quiz/');
   const data = await res.json();
   const list = document.getElementById('quiz-list');
   const countEl = document.getElementById('quiz-count');
@@ -62,7 +56,7 @@ function formatDate(iso) {
 }
 
 async function startGame(quizId, pin) {
-  const res = await fetch(`/game/start/${quizId}`, {method: 'POST'});
+  const res = await authFetch(`/game/start/${quizId}`, {method: 'POST'});
   const data = await res.json();
   if (data.success) {
     location.href = `/host/${data.session_id}/${pin}`;
@@ -77,7 +71,7 @@ async function startGame(quizId, pin) {
 
 async function deleteQuiz(id) {
   if (!confirm('Удалить квиз?')) return;
-  const res = await fetch(`/quiz/${id}`, {method: 'DELETE'});
+  const res = await authFetch(`/quiz/${id}`, {method: 'DELETE'});
   const data = await res.json();
   if (data.success) loadQuizzes();
   else alert(data.message);
@@ -94,10 +88,6 @@ function showCreateModal() {
 
 function hideCreateModal() {
   document.getElementById('create-modal').classList.add('hidden');
-}
-
-function hideGameModal() {
-  document.getElementById('game-modal').classList.add('hidden');
 }
 
 function addQuestion() {
@@ -140,7 +130,6 @@ function makeAnswerRow(qid, aid) {
 
 function addAnswer(qid) {
   const container = document.getElementById(`qa-${qid}`);
-  const count = container.children.length + 1;
   container.insertAdjacentHTML('beforeend', makeAnswerRow(qid, Date.now()));
 }
 
@@ -186,8 +175,8 @@ async function saveQuiz() {
     questions.push({text, question_type: type, answers});
   }
 
-  const res = await fetch('/quiz/', {
-    method: 'POST', headers: {'Content-Type': 'application/json'},
+  const res = await authFetch('/quiz/', {
+    method: 'POST',
     body: JSON.stringify({title, questions})
   });
   const data = await res.json();
@@ -198,21 +187,11 @@ async function saveQuiz() {
     err.textContent = data.message;
   }
 }
-// Функция для копирования PIN-кода в буфер обмена
+
 function copyPin(pin) {
-    navigator.clipboard.writeText(pin).then(() => {
-        alert(`PIN ${pin} скопирован!`);
-    }).catch(err => {
-        console.error('Ошибка копирования:', err);
-    });
+  navigator.clipboard.writeText(pin).then(() => {
+    alert(`PIN ${pin} скопирован!`);
+  });
 }
 
-// Функция для перехода на страницу хоста (если она вызывается отдельно)
-function hostAction(sessionId, pin) {
-    if (sessionId && pin) {
-        location.href = `/host/${sessionId}/${pin}`;
-    } else {
-        console.error("Недостаточно данных для перехода: ", sessionId, pin);
-    }
-}
 loadQuizzes();
