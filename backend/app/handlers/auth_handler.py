@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, session, current_app as app
 from backend.app.services.auth_service import login_user, register_user
 from backend.app.middlwares.auth import login_required
 import jwt
+from flask_jwt_extended import jwt_required, get_jwt, create_access_token
 auth_bp = Blueprint('auth', __name__)
 
 @auth_bp.route('/login', methods=['POST'])
@@ -34,8 +35,9 @@ def register():
     return jsonify(result), 400
 
 @auth_bp.route('/logout', methods=['POST'])
+@jwt_required()
 def logout():
-    return jsonify({"success": True}), 200
+    return jsonify({"success": True, "message": "Токен закочился"}), 200
 
 @auth_bp.route('/me', methods=['GET'])
 @login_required

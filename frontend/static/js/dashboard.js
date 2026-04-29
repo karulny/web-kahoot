@@ -85,6 +85,11 @@ function showCreateModal() {
   document.getElementById('create-modal').classList.remove('hidden');
   addQuestion();
 }
+function logout(){
+  const token = localStorage.getItem('token');
+  localStorage.removeItem('token');
+  window.location.href = '/';
+}
 
 function hideCreateModal() {
   document.getElementById('create-modal').classList.add('hidden');
