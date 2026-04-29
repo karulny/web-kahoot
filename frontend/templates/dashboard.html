@@ -65,6 +65,19 @@
   let statsShown = false;
   let pollingInterval = null;
 
+  // Все запросы хоста идут с токеном
+  function authFetch(url, options = {}) {
+    const token = localStorage.getItem('token');
+    return fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token,
+        ...(options.headers || {})
+      }
+    });
+  }
+
   function startPolling() {
     pollingInterval = setInterval(pollStatus, 2500);
     pollStatus();
@@ -72,6 +85,7 @@
 
   async function pollStatus() {
     try {
+      // /status — публичный, токен не нужен, participant_id передаём в query
       const res = await fetch(`/game/status/${PIN}`);
       const data = await res.json();
       if (!data.success) return;
@@ -79,7 +93,11 @@
       document.getElementById('participants-badge').textContent = `${data.participants_count} участников`;
 
       if (data.status === 'waiting') {
-        // nothing dynamic needed
+        // обновляем список участников
+        const joined = document.getElementById('joined-list');
+        if (data.participants_count > 0) {
+          // список имён не приходит в статусе, просто показываем счётчик
+        }
       } else if (data.status === 'active') {
         showScreen('question');
         renderQuestion(data);
@@ -122,7 +140,8 @@
 
   async function showStats() {
     if (!currentQuestionId) return;
-    const res = await fetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
+    // stats — защищённый, нужен токен
+    const res = await authFetch(`/game/stats/${SESSION_ID}/${currentQuestionId}`);
     const data = await res.json();
     const el = document.getElementById('answer-stats');
     const dist = data.distribution || {};
@@ -138,7 +157,8 @@
   }
 
   async function hostAction() {
-    const res = await fetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
+    // next — защищённый, нужен токен
+    const res = await authFetch(`/game/next/${SESSION_ID}`, {method: 'POST'});
     const data = await res.json();
     if (!data.success) return;
     if (data.finished) {
@@ -173,6 +193,11 @@
     navigator.clipboard.writeText(PIN);
   }
 
-  startPolling();
+  // Если токена нет — редирект на логин
+  if (!localStorage.getItem('token')) {
+    location.href = '/';
+  } else {
+    startPolling();
+  }
 </script>
 {% endblock %}

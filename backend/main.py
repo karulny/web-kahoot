@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, session, redirect, url_for
+from flask import Flask, render_template
 from flask_cors import CORS
 from backend.app.db.session import db
 from backend.app.handlers.auth_handler import auth_bp
@@ -31,25 +31,14 @@ def index():
     return render_template('index.html')
 
 
-@app.route('/auth')
-def auth_page():
-    if session.get('user_id'):
-        return redirect(url_for('dashboard'))
-    return render_template('index.html')
-
-
 @app.route('/dashboard')
 def dashboard():
-    if not session.get('user_id'):
-        return redirect(url_for('auth_page'))
-    return render_template('auth.html')          # auth.html содержит дашборд квизов
+    return render_template('auth.html')
 
 
 @app.route('/host/<int:session_id>/<pin>')
 def host_page(session_id, pin):
-    if not session.get('user_id'):
-        return redirect(url_for('auth_page'))
-    return render_template('dashboard.html', session_id=session_id, pin=pin)  # dashboard.html содержит хост-страницу
+    return render_template('dashboard.html', session_id=session_id, pin=pin)
 
 
 @app.route('/play/<pin>')

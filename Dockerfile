@@ -1,15 +1,32 @@
-FROM python:3.12-slim
+FROM python:3.14-slim AS python-deps
+
+WORKDIR /install
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir --prefix=/install/pkg -r requirements.txt
+
+
+
+FROM python:3.14-slim AS runtime
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app \
+    PYTHONDONTWRITEBYTECODE=1
 
 WORKDIR /app
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy installed packages from build stage
+COPY --from=python-deps /install/pkg /usr/local
 
-COPY . .
+# Copy application source
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
 
 EXPOSE 5000
 
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONPATH=/app
-
-CMD ["python", "-m", "flask", "--app", "backend.main", "run", "--host=0.0.0.0", "--port=5000"]
+CMD ["python", "-m", "gunicorn", \
+     "--bind", "0.0.0.0:5000", \
+     "--workers", "4", \
+     "--timeout", "60", \
+     "--access-logfile", "-", \
+     "backend.main:app"]
