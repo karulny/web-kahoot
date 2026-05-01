@@ -5,10 +5,14 @@
 {% block content %}
 <div class="host-page">
   <div class="host-header">
-    <a href="/dashboard" class="btn btn-ghost btn-sm">← Назад</a>
+    <a href="/dashboard" class="btn btn-ghost btn-sm">
+      <span class="icon">arrow_back</span> Назад
+    </a>
     <div class="host-pin">
       {{ pin }}
-      <button class="btn-copy" onclick="copyPin()" title="Скопировать">⧉</button>
+      <button class="btn-copy" onclick="copyPin()" title="Скопировать">
+        <span class="icon" id="copy-icon">content_copy</span>
+      </button>
     </div>
     <div id="participants-badge" class="participants-badge">0 участников</div>
   </div>
@@ -24,19 +28,18 @@
 
         <!-- QR-код -->
         <div id="qr-wrapper" style="margin:8px 0">
-          <img id="qr-img"
-               src=""
-               alt="QR для входа"
+          <img id="qr-img" src="" alt="QR для входа"
                style="width:160px;height:160px;border-radius:var(--radius-sm);
-                      background:var(--surface);border:1px solid var(--border);
-                      display:none">
+                      background:var(--surface);border:1px solid var(--border);display:none">
           <p id="qr-hint" style="color:var(--text3);font-size:.75rem;margin-top:6px;font-family:var(--mono)">
             Загрузка QR...
           </p>
         </div>
 
         <div id="joined-list" class="joined-list"></div>
-        <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
+        <button class="btn btn-primary btn-lg" onclick="hostAction()">
+          Начать <span class="icon">arrow_forward</span>
+        </button>
       </div>
     </div>
 
@@ -54,8 +57,12 @@
       </div>
       <div id="answer-stats" class="answer-stats hidden"></div>
       <div class="host-controls">
-        <button class="btn btn-ghost btn-sm" onclick="showStats()" id="stats-btn">Статистика</button>
-        <button class="btn btn-primary" onclick="hostAction()" id="next-btn">Следующий →</button>
+        <button class="btn btn-ghost btn-sm" onclick="showStats()" id="stats-btn">
+          <span class="icon">bar_chart</span> Статистика
+        </button>
+        <button class="btn btn-primary" onclick="hostAction()" id="next-btn">
+          Следующий <span class="icon">arrow_forward</span>
+        </button>
       </div>
     </div>
 
@@ -64,8 +71,12 @@
       <div class="finished-title"><h2>Игра завершена</h2></div>
       <div id="final-leaderboard" class="leaderboard"></div>
       <div class="host-controls">
-        <a href="/game/export/{{ session_id }}" class="btn btn-accent">Скачать Excel</a>
-        <a href="/dashboard" class="btn btn-primary">В дашборд</a>
+        <a href="/game/export/{{ session_id }}" class="btn btn-accent">
+          <span class="icon">download</span> Скачать Excel
+        </a>
+        <a href="/dashboard" class="btn btn-primary">
+          <span class="icon">home</span> В дашборд
+        </a>
       </div>
     </div>
 
@@ -148,7 +159,6 @@
     const ids = participants.map(p => p.id).join(',');
     if (ids === lastParticipantIds) return;
     lastParticipantIds = ids;
-
     const joined = document.getElementById('joined-list');
     if (!participants.length) {
       joined.innerHTML = '<span style="color:var(--text3);font-size:.82rem">Никто ещё не присоединился</span>';
@@ -185,7 +195,9 @@
     ).join('');
 
     const isLast = data.current_index + 1 >= data.total_questions;
-    document.getElementById('next-btn').textContent = isLast ? 'Завершить ✓' : 'Следующий →';
+    document.getElementById('next-btn').innerHTML = isLast
+      ? 'Завершить <span class="icon">check</span>'
+      : 'Следующий <span class="icon">arrow_forward</span>';
   }
 
   async function showStats() {
@@ -211,7 +223,6 @@
 
   async function hostAction() {
     lobbyStarted = true;
-
     const res = await authFetch(`/game/next/${SESSION_ID}`, { method: 'POST' });
     const data = await res.json();
     if (!data.success) return;
@@ -229,11 +240,16 @@
     }
   }
 
+  const MEDALS = [
+    '<span class="icon icon-filled" style="color:#FFD700;font-size:1.3rem">emoji_events</span>',
+    '<span class="icon icon-filled" style="color:#C0C0C0;font-size:1.3rem">emoji_events</span>',
+    '<span class="icon icon-filled" style="color:#CD7F32;font-size:1.3rem">emoji_events</span>',
+  ];
+
   function renderLeaderboard(lb) {
-    const medals = ['🥇', '🥈', '🥉'];
     document.getElementById('final-leaderboard').innerHTML = lb.map((p, i) =>
       `<div class="lb-row ${i < 3 ? 'lb-top' : ''}">
-        <span class="lb-place">${medals[i] || i + 1}</span>
+        <span class="lb-place">${MEDALS[i] || i + 1}</span>
         <span class="lb-name">${escapeHtml(p.name)}</span>
         <span class="lb-score">${p.score}</span>
       </div>`
@@ -247,9 +263,9 @@
 
   function copyPin() {
     navigator.clipboard.writeText(PIN).then(() => {
-      const btn = document.querySelector('.btn-copy');
-      btn.textContent = '✓';
-      setTimeout(() => btn.textContent = '⧉', 1500);
+      const ic = document.getElementById('copy-icon');
+      ic.textContent = 'check';
+      setTimeout(() => ic.textContent = 'content_copy', 1500);
     });
   }
 
