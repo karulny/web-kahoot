@@ -1,0 +1,30 @@
+/* ── MATERIAL SYMBOLS ──
+   Используем класс .icon для всех иконок из Material Symbols Rounded.
+   font-variation-settings управляет: размером (opsz), насыщенностью (wght),
+   заливкой (FILL=1 — залитая, 0 — outline) и контрастностью (GRAD).
+*/
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  font-size: 1.1em;        /* масштабируется вместе с текстом родителя */
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+  user-select: none;
+  /* outline-стиль по умолчанию */
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+/* Залитый вариант — для акцентных иконок (медали, трофей, праздник) */
+.icon-filled {
+  font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+/* Чуть крупнее — для пустых состояний и финишных экранов */
+.icon-lg {
+  font-size: 2rem;
+}
+.icon-xl {
+  font-size: 3rem;
+}

@@ -13,6 +13,11 @@ function authFetch(url, options = {}) {
   });
 }
 
+/* ── иконка-хелпер ── */
+function icon(name, extra = '') {
+  return `<span class="icon${extra ? ' ' + extra : ''}">${name}</span>`;
+}
+
 /* ── QUIZ LIST ── */
 
 async function loadQuizzes() {
@@ -23,7 +28,7 @@ async function loadQuizzes() {
 
   if (!data.success || !data.quizzes.length) {
     list.innerHTML = `<div class="empty-state">
-      <div class="empty-icon">📝</div>
+      <div class="empty-icon">${icon('edit_note', 'icon-lg')}</div>
       <p>У тебя пока нет квизов</p>
       <button class="btn btn-primary" onclick="showCreateModal()">Создать первый</button>
     </div>`;
@@ -41,9 +46,15 @@ async function loadQuizzes() {
       <h3 class="quiz-title">${q.title}</h3>
       <p class="quiz-meta">${q.count} вопрос${ending(q.count)}</p>
       <div class="quiz-actions">
-        <button class="btn btn-primary btn-sm" onclick="startGame(${q.id}, '${q.pin}')">▶ Запустить</button>
-        <button class="btn btn-outline btn-sm" onclick="openEditModal(${q.id})">✎ Изменить</button>
-        <button class="btn btn-ghost btn-sm" onclick="deleteQuiz(${q.id})">Удалить</button>
+        <button class="btn btn-primary btn-sm" onclick="startGame(${q.id}, '${q.pin}')">
+          ${icon('play_arrow')} Запустить
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="openEditModal(${q.id})">
+          ${icon('edit')} Изменить
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteQuiz(${q.id})">
+          ${icon('delete')} Удалить
+        </button>
       </div>
     </div>
   `).join('');
@@ -112,7 +123,9 @@ function makeAnswerRow(qid, aid, text = '', correct = false) {
   return `<div class="answer-row" id="ar-${qid}-${aid}">
     <input type="checkbox" class="ans-correct" title="Правильный" ${correct ? 'checked' : ''}>
     <input type="text" class="ans-text" placeholder="Вариант ответа" value="${escapeHtml(text)}">
-    <button class="btn-remove-sm" onclick="removeAnswer('${qid}','${aid}')">✕</button>
+    <button class="btn-remove-sm" onclick="removeAnswer('${qid}','${aid}')" title="Удалить вариант">
+      ${icon('close')}
+    </button>
   </div>`;
 }
 
@@ -124,7 +137,9 @@ function buildQuestionHTML(id, label, text = '', type = 'single', answers = []) 
   return `
     <div class="qb-header">
       <span class="qb-num">${label}</span>
-      <button class="btn-remove" onclick="removeQuestion(${id})">✕</button>
+      <button class="btn-remove" onclick="removeQuestion(${id})" title="Удалить вопрос">
+        ${icon('close')}
+      </button>
     </div>
     <div class="field">
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
@@ -139,7 +154,9 @@ function buildQuestionHTML(id, label, text = '', type = 'single', answers = []) 
     <div class="qb-answers" id="qa-${id}">
       ${defaultAnswers}
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="addAnswer(${id})">+ Вариант</button>
+    <button class="btn btn-ghost btn-sm" onclick="addAnswer(${id})">
+      ${icon('add')} Вариант
+    </button>
   `;
 }
 
@@ -161,9 +178,6 @@ function removeQuestion(id) {
 function collectQuestions(container) {
   const qBuilders = container.querySelectorAll('.question-builder');
   const questions = [];
-  const err = container.closest('.modal-box')
-    ? container.closest('.modal-box').querySelector('.form-error')
-    : null;
 
   for (const qEl of qBuilders) {
     const text = qEl.querySelector('.qb-text').value.trim();
@@ -248,7 +262,9 @@ function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = 
   return `
     <div class="qb-header">
       <span class="qb-num">${label}</span>
-      <button class="btn-remove" onclick="removeEditQuestion(${id})">✕</button>
+      <button class="btn-remove" onclick="removeEditQuestion(${id})" title="Удалить вопрос">
+        ${icon('close')}
+      </button>
     </div>
     <div class="field">
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
@@ -263,7 +279,9 @@ function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = 
     <div class="qb-answers" id="eqa-${id}">
       ${answersHTML}
     </div>
-    <button class="btn btn-ghost btn-sm" onclick="addEditAnswer(${id})">+ Вариант</button>
+    <button class="btn btn-ghost btn-sm" onclick="addEditAnswer(${id})">
+      ${icon('add')} Вариант
+    </button>
   `;
 }
 
@@ -271,7 +289,9 @@ function makeEditAnswerRow(qid, aid, text = '', correct = false) {
   return `<div class="answer-row" id="ear-${qid}-${aid}">
     <input type="checkbox" class="ans-correct" title="Правильный" ${correct ? 'checked' : ''}>
     <input type="text" class="ans-text" placeholder="Вариант ответа" value="${escapeHtml(text)}">
-    <button class="btn-remove-sm" onclick="removeEditAnswer('${qid}','${aid}')">✕</button>
+    <button class="btn-remove-sm" onclick="removeEditAnswer('${qid}','${aid}')" title="Удалить вариант">
+      ${icon('close')}
+    </button>
   </div>`;
 }
 

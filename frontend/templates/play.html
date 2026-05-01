@@ -16,7 +16,9 @@
         <input type="text" id="player-name" placeholder="Введи имя" maxlength="30" autofocus>
       </div>
       <div id="join-error" class="form-error"></div>
-      <button class="btn btn-primary btn-full btn-lg" onclick="doJoin()">Войти в игру</button>
+      <button class="btn btn-primary btn-full btn-lg" onclick="doJoin()">
+        Войти в игру <span class="icon">login</span>
+      </button>
     </div>
   </div>
 
@@ -51,14 +53,16 @@
   <!-- Финал -->
   <div id="screen-finished" class="play-screen hidden">
     <div class="finish-box">
-      <div class="finish-emoji" id="finish-emoji">🎉</div>
+      <span class="icon icon-filled icon-xl" id="finish-icon" style="color:var(--accent)">celebration</span>
       <h2 id="finish-title">Игра завершена</h2>
       <div class="my-final-score">
         <span id="final-score-val">0</span>
         <span class="score-label">очков</span>
       </div>
       <div id="final-leaderboard" class="leaderboard-compact"></div>
-      <a href="/" class="btn btn-outline">На главную</a>
+      <a href="/" class="btn btn-outline">
+        <span class="icon">home</span> На главную
+      </a>
     </div>
   </div>
 </div>
@@ -86,7 +90,7 @@
     const data = await res.json();
     if (!data.success) { err.textContent = data.message; return; }
 
-    participantId = data.participant_id;  // сохраняем — будем передавать в каждом запросе
+    participantId = data.participant_id;
     document.getElementById('my-name-badge').textContent = name;
     showScreen('waiting');
     startPolling();
@@ -98,7 +102,6 @@
 
   async function pollStatus() {
     try {
-      // participant_id передаём как query param для GET запроса
       const url = participantId
         ? `/game/status/${PIN}?participant_id=${participantId}`
         : `/game/status/${PIN}`;
@@ -142,7 +145,7 @@
     } else {
       answersEl.innerHTML = q.answers.map(a =>
         `<button class="play-answer-btn" onclick="submitAnswer(${q.id}, ${a.id}, this)">
-          ${a.text}
+          ${escapeHtml(a.text)}
         </button>`
       ).join('');
     }
@@ -157,7 +160,7 @@
     const res = await fetch('/game/answer', {
       method: 'POST', headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({
-        participant_id: participantId,   // ← передаём participant_id в теле
+        participant_id: participantId,
         question_id: questionId,
         answer_option_id: optionId
       })
@@ -170,23 +173,31 @@
 
     const fb = document.getElementById('answer-feedback');
     fb.className = `answer-feedback ${data.is_correct ? 'correct' : 'wrong'}`;
-    fb.textContent = data.is_correct ? '✓ Правильно +100' : '✗ Неверно';
+    fb.innerHTML = data.is_correct
+      ? '<span class="icon icon-filled">check_circle</span> Правильно +100'
+      : '<span class="icon icon-filled">cancel</span> Неверно';
     fb.classList.remove('hidden');
     btn.classList.add(data.is_correct ? 'correct' : 'wrong');
   }
 
+  const MEDALS = [
+    '<span class="icon icon-filled" style="color:#FFD700">emoji_events</span>',
+    '<span class="icon icon-filled" style="color:#C0C0C0">emoji_events</span>',
+    '<span class="icon icon-filled" style="color:#CD7F32">emoji_events</span>',
+  ];
+
   function renderFinish(data) {
     document.getElementById('final-score-val').textContent = myScore;
     const lb = data.leaderboard || [];
-    const medals = ['🥇', '🥈', '🥉'];
     if (lb[0] && lb[0].score === myScore) {
-      document.getElementById('finish-emoji').textContent = '🏆';
+      document.getElementById('finish-icon').textContent = 'emoji_events';
+      document.getElementById('finish-icon').style.color = '#FFD700';
       document.getElementById('finish-title').textContent = 'Победа!';
     }
     document.getElementById('final-leaderboard').innerHTML = lb.slice(0, 5).map((p, i) =>
       `<div class="lb-compact-row ${p.score === myScore ? 'lb-me' : ''}">
-        <span>${medals[i] || i + 1}</span>
-        <span>${p.name}</span>
+        <span>${MEDALS[i] || i + 1}</span>
+        <span>${escapeHtml(p.name)}</span>
         <span>${p.score}</span>
       </div>`
     ).join('');
@@ -195,6 +206,12 @@
   function showScreen(name) {
     document.querySelectorAll('.play-screen').forEach(s => s.classList.add('hidden'));
     document.getElementById(`screen-${name}`).classList.remove('hidden');
+  }
+
+  function escapeHtml(str = '') {
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   document.addEventListener('keydown', e => {
