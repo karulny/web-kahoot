@@ -21,6 +21,20 @@
         <h2>Ожидание участников</h2>
         <p>PIN: <strong style="font-family:var(--mono);color:var(--accent)">{{ pin }}</strong></p>
         <p class="link-preview" id="play-link"></p>
+
+        <!-- QR-код -->
+        <div id="qr-wrapper" style="margin:8px 0">
+          <img id="qr-img"
+               src=""
+               alt="QR для входа"
+               style="width:160px;height:160px;border-radius:var(--radius-sm);
+                      background:var(--surface);border:1px solid var(--border);
+                      display:none">
+          <p id="qr-hint" style="color:var(--text3);font-size:.75rem;margin-top:6px;font-family:var(--mono)">
+            Загрузка QR...
+          </p>
+        </div>
+
         <div id="joined-list" class="joined-list"></div>
         <button class="btn btn-primary btn-lg" onclick="hostAction()">Начать →</button>
       </div>
@@ -67,8 +81,8 @@
   let statsShown = false;
   let pollingInterval = null;
   let lastParticipantIds = '';
-  // Флаг: ведущий нажал «Начать», лобби закрыто
   let lobbyStarted = false;
+  let qrLoaded = false;
 
   function authFetch(url, options = {}) {
     const token = localStorage.getItem('token');
@@ -80,6 +94,23 @@
         ...(options.headers || {})
       }
     });
+  }
+
+  async function loadQr() {
+    if (qrLoaded) return;
+    try {
+      const res = await authFetch(`/game/qr/${PIN}`);
+      const data = await res.json();
+      if (data.success && data.qr) {
+        const img = document.getElementById('qr-img');
+        img.src = data.qr;
+        img.style.display = 'block';
+        document.getElementById('qr-hint').textContent = 'Сканируй камерой';
+        qrLoaded = true;
+      }
+    } catch(e) {
+      document.getElementById('qr-hint').textContent = '';
+    }
   }
 
   function startPolling() {
@@ -97,13 +128,11 @@
         `${data.participants_count} участник${pEnding(data.participants_count)}`;
 
       if (data.status === 'waiting') {
-        // Пока ведущий не нажал «Начать» — держим экран лобби
         if (!lobbyStarted) {
           showScreen('waiting');
           renderParticipants(data.participants || []);
         }
       } else if (data.status === 'active') {
-        // Сервер активен — значит игра уже шла (например, перезагрузка страницы)
         lobbyStarted = true;
         showScreen('question');
         renderQuestion(data);
@@ -181,7 +210,6 @@
   }
 
   async function hostAction() {
-    // Устанавливаем флаг сразу — pollStatus больше не будет перекрывать экран лобби
     lobbyStarted = true;
 
     const res = await authFetch(`/game/next/${SESSION_ID}`, { method: 'POST' });
@@ -196,7 +224,6 @@
       renderLeaderboard(lbData.leaderboard);
     } else {
       statsShown = false;
-      // Переключаем экран немедленно, не ждём следующего poll
       showScreen('question');
       pollStatus();
     }
@@ -238,13 +265,13 @@
     return 'ов';
   }
 
-  // Ссылка для участников — берём origin из браузера, чтобы порт был правильным
   document.getElementById('play-link').textContent =
     window.location.origin + '/play/' + PIN;
 
   if (!localStorage.getItem('token')) {
     location.href = '/';
   } else {
+    loadQr();
     startPolling();
   }
 </script>
