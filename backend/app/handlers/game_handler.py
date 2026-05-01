@@ -5,6 +5,7 @@ from backend.app.services.game_service import (
     get_game_status, submit_answer, get_leaderboard,
     get_question_stats, export_results_xlsx
 )
+from backend.app.services.qr_service import generate_join_qr
 
 game_bp = Blueprint('game', __name__)
 
@@ -36,7 +37,6 @@ def next_q(session_id):
 
 @game_bp.route('/status/<pin>', methods=['GET'])
 def status(pin):
-    # GET-запрос — participant_id передаётся как query param: /game/status/ABC?participant_id=5
     p_id = request.args.get('participant_id')
     result = get_game_status(pin, p_id)
     return jsonify(result), 200 if result['success'] else 404
@@ -77,3 +77,16 @@ def export(session_id):
         return jsonify({"success": False, "message": "Не найдено"}), 404
     return send_file(buf, mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
                      as_attachment=True, download_name=f'results_{session_id}.xlsx')
+
+
+@game_bp.route('/qr/<pin>', methods=['GET'])
+@login_required
+def qr(pin):
+    # Берём origin из заголовков запроса, чтобы QR вёл на правильный хост:порт
+    forwarded_proto = request.headers.get('X-Forwarded-Proto', request.scheme)
+    forwarded_host  = request.headers.get('X-Forwarded-Host',
+                        request.headers.get('Host', request.host))
+    base_url = f"{forwarded_proto}://{forwarded_host}"
+
+    img_data = generate_join_qr(pin.upper(), base_url=base_url)
+    return jsonify({"success": True, "qr": img_data})
