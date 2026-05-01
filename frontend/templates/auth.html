@@ -18,7 +18,9 @@
         <h1>Мои квизы</h1>
         <p class="dash-sub" id="quiz-count">...</p>
       </div>
-      <button class="btn btn-primary" onclick="showCreateModal()">+ Новый квиз</button>
+      <button class="btn btn-primary" onclick="showCreateModal()">
+        <span class="icon">add</span> Новый квиз
+      </button>
     </div>
 
     <div id="quiz-list" class="quiz-grid">
@@ -33,7 +35,9 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2>Новый квиз</h2>
-      <button class="modal-close" onclick="hideCreateModal()">✕</button>
+      <button class="modal-close" onclick="hideCreateModal()">
+        <span class="icon">close</span>
+      </button>
     </div>
 
     <div class="field">
@@ -43,7 +47,9 @@
 
     <div id="questions-list"></div>
 
-    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:4px" onclick="addQuestion()">+ Добавить вопрос</button>
+    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:4px" onclick="addQuestion()">
+      <span class="icon">add</span> Добавить вопрос
+    </button>
 
     <div id="create-error" class="form-error" style="margin-top:8px"></div>
 
@@ -60,7 +66,9 @@
   <div class="modal-box">
     <div class="modal-header">
       <h2>Редактировать квиз</h2>
-      <button class="modal-close" onclick="hideEditModal()">✕</button>
+      <button class="modal-close" onclick="hideEditModal()">
+        <span class="icon">close</span>
+      </button>
     </div>
 
     <input type="hidden" id="edit-quiz-id">
@@ -72,7 +80,9 @@
 
     <div id="edit-questions-list"></div>
 
-    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:4px" onclick="addEditQuestion()">+ Добавить вопрос</button>
+    <button class="btn btn-ghost btn-sm btn-full" style="margin-top:4px" onclick="addEditQuestion()">
+      <span class="icon">add</span> Добавить вопрос
+    </button>
 
     <div id="edit-error" class="form-error" style="margin-top:8px"></div>
 
