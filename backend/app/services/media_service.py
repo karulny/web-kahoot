@@ -19,7 +19,7 @@ def save_media_file(file, upload_folder: str = None) -> dict:
         raise ValueError(f"Недопустимое расширение файла. Разрешены: {', '.join(ALLOWED_EXTENSIONS)}")
     
     if upload_folder is None:
-        upload_folder = os.path.join(current_app.root_path, '..', 'frontend', 'static', 'uploads')
+        upload_folder = os.path.join(current_app.root_path, '../../../..', 'frontend', 'static', 'uploads')
     
     upload_folder = os.path.abspath(upload_folder)
     os.makedirs(upload_folder, exist_ok=True)
@@ -43,7 +43,7 @@ def save_media_file(file, upload_folder: str = None) -> dict:
 
 def delete_media_file(filename: str, upload_folder: str = None) -> bool:
     if upload_folder is None:
-        upload_folder = os.path.join(current_app.root_path, '..', 'frontend', 'static', 'uploads')
+        upload_folder = os.path.join(current_app.root_path, '../../../..', 'frontend', 'static', 'uploads')
     
     filepath = os.path.join(upload_folder, filename)
     
