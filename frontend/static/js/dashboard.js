@@ -145,6 +145,17 @@ function buildQuestionHTML(id, label, text = '', type = 'single', answers = []) 
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
     </div>
     <div class="field">
+    <label>Медиа</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" class="qb-media" placeholder="URL или загрузи файл"
+             style="flex:1">
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+        ${icon('upload')}
+        <input type="file" accept="image/*,video/*,audio/*"
+               style="display:none"
+               onchange="uploadMedia(this)">
+      </label>
+    </div>
       <select class="qb-type">
         <option value="single" ${type === 'single' ? 'selected' : ''}>Один вариант</option>
         <option value="multiple" ${type === 'multiple' ? 'selected' : ''}>Несколько вариантов</option>
@@ -196,7 +207,8 @@ function collectQuestions(container) {
     if (type !== 'poll' && !answers.some(a => a.is_correct)) {
       return { error: 'Отметь правильный ответ (или выбери «Голосование»)' };
     }
-    questions.push({ text, question_type: type, answers });
+    const media_url = qEl.querySelector('.qb-media')?.value.trim() || null;
+    questions.push({ text, question_type: type, answers, media_url });
   }
 
   if (!questions.length) return { error: 'Добавь хотя бы один вопрос' };
@@ -267,6 +279,16 @@ function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = 
       </button>
     </div>
     <div class="field">
+    <label>Медиа</label>
+    <div style="display:flex;gap:6px;align-items:center">
+      <input type="text" class="qb-media" placeholder="URL или загрузи файл"
+             style="flex:1">
+      <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0">
+        ${icon('upload')}
+        <input type="file" accept="image/*,video/*,audio/*"
+               style="display:none"
+               onchange="uploadMedia(this)">
+      </label>
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
     </div>
     <div class="field">
@@ -386,5 +408,35 @@ function logout() {
   window.location.href = '/';
 }
 
+async function uploadMedia(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  // Находим поле media рядом с кнопкой
+  const mediaInput = input.closest('.field').querySelector('.qb-media');
+  mediaInput.placeholder = 'Загрузка...';
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = localStorage.getItem('token');
+  const res = await fetch('/media/upload', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + token },
+    body: formData
+  });
+  const data = await res.json();
+
+  if (data.success) {
+    mediaInput.value = data.url;
+    mediaInput.placeholder = 'URL или загрузи файл';
+  } else {
+    alert(data.message);
+    mediaInput.placeholder = 'URL или загрузи файл';
+  }
+
+  // Сбрасываем input чтобы можно было загрузить тот же файл повторно
+  input.value = '';
+}
 /* ── INIT ── */
 loadQuizzes();
