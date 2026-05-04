@@ -75,7 +75,7 @@
     const data = await res.json();
     if (data.success) {
       localStorage.setItem('token', data.token);
-      location.href = '/dashboard';  // ← без .html, это маршрут Flask
+      location.href = '/dashboard';
     } else {
       err.textContent = data.message;
     }

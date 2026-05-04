@@ -4,18 +4,10 @@ import qrcode
 from qrcode.image.styledpil import StyledPilImage
 from qrcode.image.styles.moduledrawers import RoundedModuleDrawer
 
-# ЭТО НАПИСАЛ ТИМУР, Я ТУТ НЕЧЕГО НЕ ДОБАВЛЯЛ И НЕ МЕНЯЛ КРОМЕ ЭТОГО КОММЕНТАРИЯ
+
 def generate_join_qr(pin: str, base_url: str = None) -> str:
     """
     Генерирует QR-код для подключения к игре.
-    
-    Args:
-        pin: PIN-код игры (4-6 символов)
-        base_url: Базовый URL сервера (например, 'http://192.168.1.5:5000')
-                 Если None — генерирует относительную ссылку /play/{pin}
-    
-    Returns:
-        Base64-строка PNG-изображения QR-кода, готовая для вставки в <img src="...">
     """
     pin = pin.upper().strip()
     
