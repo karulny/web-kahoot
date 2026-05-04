@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify, current_app as app
 from backend.app.services.auth_service import login_user, register_user
 from backend.app.middlwares.auth import login_required
 import jwt
+from datetime import datetime, timedelta, timezone
 
 auth_bp = Blueprint('auth', __name__)
 
@@ -17,7 +18,10 @@ def login():
     result = login_user(username, password)
     if result.get("success"):
         token = jwt.encode(
-            {"user_id": result['user_id']},
+            {
+                "user_id": result['user_id'],
+                "exp": datetime.now(timezone.utc) + timedelta(days=7)
+            },
             app.config['SECRET_KEY'],
             algorithm="HS256"
         )
