@@ -4,7 +4,7 @@
 ![Static Badge](https://img.shields.io/badge/github-repo-grey?logo=github)
 
 
-## Архитектура (на данный моеент) 04.04:
+## Архитектура:
 ```plain
 backend/
 ├── app/
