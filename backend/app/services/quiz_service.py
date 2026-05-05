@@ -1,7 +1,7 @@
 import random
 import string
 from backend.app.db.session import db
-from backend.app.models import Quiz, Question, AnswerOption
+from backend.app.models.models import Quiz, Question, AnswerOption
 
 
 def generate_pin(length=6):

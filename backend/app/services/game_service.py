@@ -1,7 +1,7 @@
 from datetime import datetime
 from backend.app.db.session import db
-from backend.app.models import Quiz, Question, AnswerOption
-from backend.app.models_game import GameSession, SessionParticipant, ParticipantAnswer
+from backend.app.models.models import Quiz, AnswerOption
+from backend.app.models.models_game import GameSession, SessionParticipant, ParticipantAnswer
 import openpyxl
 import io
 

@@ -1,6 +1,6 @@
 from sqlalchemy.exc import IntegrityError
 from backend.app.db.session import db
-from backend.app.models import User
+from backend.app.models.models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 
 
