@@ -5,6 +5,7 @@ from backend.app.db.session import db
 from backend.app.handlers.auth_handler import auth_bp
 from backend.app.handlers.quiz_handler import quiz_bp
 from backend.app.handlers.game_handler import game_bp
+from backend.app.handlers.media_handler import media_bp
 
 app = Flask(
     __name__,
@@ -25,7 +26,7 @@ app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
 }
 
 db.init_app(app)
-
+app.register_blueprint(media_bp, url_prefix='/media')
 app.register_blueprint(auth_bp, url_prefix='/auth')
 app.register_blueprint(quiz_bp, url_prefix='/quiz')
 app.register_blueprint(game_bp, url_prefix='/game')

@@ -129,7 +129,7 @@ function makeAnswerRow(qid, aid, text = '', correct = false) {
   </div>`;
 }
 
-function buildQuestionHTML(id, label, text = '', type = 'single', answers = []) {
+function buildQuestionHTML(id, label, text = '', type = 'single', answers = [], mediaUrl = '') {
   const defaultAnswers = answers.length
     ? answers.map((a, i) => makeAnswerRow(id, i + 1, a.text || a, a.correct || a.is_correct || false)).join('')
     : makeAnswerRow(id, 1) + makeAnswerRow(id, 2);
@@ -143,6 +143,19 @@ function buildQuestionHTML(id, label, text = '', type = 'single', answers = []) 
     </div>
     <div class="field">
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
+    </div>
+    <div class="field">
+      <label>Медиа (необязательно)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" class="qb-media" placeholder="URL или загрузи файл"
+               style="flex:1" value="${escapeHtml(mediaUrl)}">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0" title="Загрузить файл">
+          ${icon('upload')}
+          <input type="file" accept="image/*,video/*,audio/*"
+                 style="display:none"
+                 onchange="uploadMedia(this)">
+        </label>
+      </div>
     </div>
     <div class="field">
       <select class="qb-type">
@@ -196,7 +209,8 @@ function collectQuestions(container) {
     if (type !== 'poll' && !answers.some(a => a.is_correct)) {
       return { error: 'Отметь правильный ответ (или выбери «Голосование»)' };
     }
-    questions.push({ text, question_type: type, answers });
+    const media_url = qEl.querySelector('.qb-media')?.value.trim() || null;
+    questions.push({ text, question_type: type, answers, media_url });
   }
 
   if (!questions.length) return { error: 'Добавь хотя бы один вопрос' };
@@ -247,14 +261,14 @@ async function openEditModal(quizId) {
     const el = document.createElement('div');
     el.className = 'question-builder';
     el.id = `eq-${id}`;
-    el.innerHTML = buildEditQuestionHTML(id, `Вопрос ${id}`, q.text, q.type, q.answers);
+    el.innerHTML = buildEditQuestionHTML(id, `Вопрос ${id}`, q.text, q.type, q.answers, q.media_url);
     document.getElementById('edit-questions-list').appendChild(el);
   }
 
   document.getElementById('edit-modal').classList.remove('hidden');
 }
 
-function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = []) {
+function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = [], mediaUrl = '') {
   const answersHTML = answers.length
     ? answers.map((a, i) => makeEditAnswerRow(id, i + 1, a.text, a.correct)).join('')
     : makeEditAnswerRow(id, 1) + makeEditAnswerRow(id, 2);
@@ -268,6 +282,19 @@ function buildEditQuestionHTML(id, label, text = '', type = 'single', answers = 
     </div>
     <div class="field">
       <input type="text" placeholder="Текст вопроса" class="qb-text" value="${escapeHtml(text)}">
+    </div>
+    <div class="field">
+      <label>Медиа (необязательно)</label>
+      <div style="display:flex;gap:6px;align-items:center">
+        <input type="text" class="qb-media" placeholder="URL или загрузи файл"
+               style="flex:1" value="${escapeHtml(mediaUrl || '')}">
+        <label class="btn btn-outline btn-sm" style="cursor:pointer;margin:0" title="Загрузить файл">
+          ${icon('upload')}
+          <input type="file" accept="image/*,video/*,audio/*"
+                 style="display:none"
+                 onchange="uploadMedia(this)">
+        </label>
+      </div>
     </div>
     <div class="field">
       <select class="qb-type">
@@ -332,31 +359,8 @@ async function saveEditQuiz() {
 
   if (!title) { err.textContent = 'Введи название'; return; }
 
-  const list = document.getElementById('edit-questions-list');
-  const qBuilders = list.querySelectorAll('.question-builder');
-  if (!qBuilders.length) { err.textContent = 'Добавь хотя бы один вопрос'; return; }
-
-  const questions = [];
-  for (const qEl of qBuilders) {
-    const text = qEl.querySelector('.qb-text').value.trim();
-    const type = qEl.querySelector('.qb-type').value;
-    if (!text) { err.textContent = 'Заполни все вопросы'; return; }
-
-    const ansRows = qEl.querySelectorAll('.answer-row');
-    const answers = [];
-    for (const row of ansRows) {
-      const t = row.querySelector('.ans-text').value.trim();
-      const correct = row.querySelector('.ans-correct').checked;
-      if (t) answers.push({ text: t, is_correct: correct });
-    }
-
-    if (answers.length < 2) { err.textContent = 'Минимум 2 варианта в каждом вопросе'; return; }
-    if (type !== 'poll' && !answers.some(a => a.is_correct)) {
-      err.textContent = 'Отметь правильный ответ (или выбери «Голосование»)';
-      return;
-    }
-    questions.push({ text, question_type: type, answers });
-  }
+  const { questions, error } = collectQuestions(document.getElementById('edit-questions-list'));
+  if (error) { err.textContent = error; return; }
 
   const res = await authFetch(`/quiz/${quizId}`, {
     method: 'PUT',
@@ -384,6 +388,40 @@ function escapeHtml(str = '') {
 function logout() {
   localStorage.removeItem('token');
   window.location.href = '/';
+}
+
+async function uploadMedia(input) {
+  const file = input.files[0];
+  if (!file) return;
+
+  const mediaInput = input.closest('.field').querySelector('.qb-media');
+  const origPlaceholder = mediaInput.placeholder;
+  mediaInput.placeholder = 'Загрузка...';
+  mediaInput.disabled = true;
+
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const token = localStorage.getItem('token');
+  try {
+    const res = await fetch('/media/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+      body: formData
+    });
+    const data = await res.json();
+    if (data.success) {
+      mediaInput.value = data.url;
+    } else {
+      alert('Ошибка загрузки: ' + data.message);
+    }
+  } catch (e) {
+    alert('Ошибка сети при загрузке файла');
+  } finally {
+    mediaInput.placeholder = origPlaceholder;
+    mediaInput.disabled = false;
+    input.value = '';
+  }
 }
 
 /* ── INIT ── */
